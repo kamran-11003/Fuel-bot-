@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fuel Complaint System - WhatsApp Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --wa-green: #25D366;
+      --wa-dark-green: #128C7E;
+      --wa-teal: #075E54;
+      --wa-light-green: #DCF8C6;
+      --chat-bg: #E5DDD5;
+      --chat-bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9c9c9' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      --white: #FFFFFF;
+      --grey-100: #F7F8F9;
+      --grey-200: #E9EDEF;
+      --grey-300: #8696A0;
+      --grey-400: #667781;
+      --grey-500: #54656F;
+      --text-primary: #111B21;
+      --text-secondary: #667781;
+      --bot-bubble: #FFFFFF;
+      --user-bubble: #D9FDD3;
+      --shadow: rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--grey-200);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .phone-frame {
+      width: 100%;
+      max-width: 420px;
+      height: 90vh;
+      max-height: 850px;
+      background: var(--white);
+      border-radius: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 30px;
+      background: #1a1a1a;
+      border-radius: 0 0 20px 20px;
+      z-index: 100;
+    }
+
+    /* Header */
+    .header {
+      background: var(--wa-teal);
+      padding: 50px 16px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-avatar {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    .header-title {
+      color: white;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .header-status {
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+    }
+
+    .header-icons {
+      display: flex;
+      gap: 20px;
+      color: white;
+    }
+
+    .header-icons svg {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      opacity: 0.9;
+    }
+
+    /* Chat Area */
+    .chat-container {
+      flex: 1;
+      background: var(--chat-bg);
+      background-image: var(--chat-bg-pattern);
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      position: relative;
+      animation: messageIn 0.3s ease-out;
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.bot {
+      background: var(--bot-bubble);
+      align-self: flex-start;
+      border-top-left-radius: 0;
+      box-shadow: 0 1px 2px var(--shadow);
+    }
+
+    .message.user {
+      background: var(--user-bubble);
+      align-self: flex-end;
+      border-top-right-radius: 0;
+      box-shadow: 0 1px 2px var(--shadow);
+    }
+
+    .message-text {
+      font-size: 14.5px;
+      line-height: 1.45;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: var(--grey-400);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .message.user .message-time {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .check-marks {
+      color: #53bdeb;
+    }
+
+    /* Quick Reply Buttons */
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quick-reply-btn {
+      background: transparent;
+      border: 1px solid var(--wa-dark-green);
+      color: var(--wa-dark-green);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .quick-reply-btn:hover {
+      background: var(--wa-dark-green);
+      color: white;
+    }
+
+    .quick-reply-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* List Options */
+    .list-options {
+      margin-top: 10px;
+      border-top: 1px solid var(--grey-200);
+      padding-top: 10px;
+    }
+
+    .list-option {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      gap: 12px;
+    }
+
+    .list-option:hover {
+      background: var(--grey-100);
+    }
+
+    .list-option-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+
+    .list-option-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .list-option-arrow {
+      color: var(--grey-300);
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border: 1px solid var(--grey-200);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 8px;
+    }
+
+    .summary-header {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--grey-200);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px dashed var(--grey-200);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+    }
+
+    .summary-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .summary-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+      max-width: 60%;
+    }
+
+    .summary-value.attached {
+      color: var(--wa-dark-green);
+    }
+
+    /* Location Preview */
+    .location-preview {
+      background: var(--grey-100);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .location-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #EA4335 0%, #C5221F 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+    }
+
+    .location-details {
+      flex: 1;
+    }
+
+    .location-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .location-coords {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Image Preview */
+    .image-preview {
+      margin-top: 8px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--grey-100);
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .image-placeholder {
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--grey-400);
+      gap: 8px;
+    }
+
+    .image-placeholder svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    /* Success Badge */
+    .success-badge {
+      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 28px;
+    }
+
+    .success-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .success-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .complaint-id {
+      background: rgba(255,255,255,0.2);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.3);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Input Area */
+    .input-area {
+      background: var(--grey-100);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-icons {
+      display: flex;
+      gap: 16px;
+      color: var(--grey-400);
+    }
+
+    .input-icons svg {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+    }
+
+    .input-field {
+      flex: 1;
+      background: white;
+      border: none;
+      border-radius: 24px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .input-field::placeholder {
+      color: var(--grey-300);
+    }
+
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: var(--wa-dark-green);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .send-btn svg {
+      width: 22px;
+      height: 22px;
+      color: white;
+      margin-left: 2px;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 12px;
+      background: var(--bot-bubble);
+      border-radius: 8px;
+      border-top-left-radius: 0;
+      width: fit-content;
+      box-shadow: 0 1px 2px var(--shadow);
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--grey-300);
+      border-radius: 50%;
+      animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    .typing-dot:nth-child(3) { animation-delay: 0; }
+
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Date Divider */
+    .date-divider {
+      text-align: center;
+      margin: 16px 0;
+    }
+
+    .date-divider span {
+      background: rgba(255,255,255,0.9);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      box-shadow: 0 1px 2px var(--shadow);
+    }
+
+    /* Demo Controls */
+    .demo-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .demo-btn {
+      background: var(--wa-teal);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .demo-btn:hover {
+      background: var(--wa-dark-green);
+      transform: translateY(-2px);
+    }
+
+    .footer-link {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 13px;
+      color: var(--grey-400);
+      text-decoration: none;
+      z-index: 1000;
+    }
+
+    .footer-link:hover {
+      color: var(--wa-dark-green);
+      text-decoration: underline;
+    }
+
+    /* Hide scrollbar */
+    .chat-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 0;
+      }
+      
+      .phone-frame {
+        max-width: 100%;
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+      }
+
+      .phone-frame::before {
+        display: none;
+      }
+
+      .header {
+        padding-top: 16px;
+      }
+
+      .demo-controls {
+        bottom: 80px;
+        right: 10px;
+      }
+
+      .footer-link {
+        bottom: 80px;
+        left: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-avatar">⛽</div>
+      <div class="header-info">
+        <div class="header-title">Fuel Complaint System</div>
+        <div class="header-status">Government of Pakistan</div>
+      </div>
+      <div class="header-icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+      <div class="date-divider"><span>Today</span></div>
+      
+      <!-- Messages will be inserted here -->
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+        </svg>
+      </div>
+      <input type="text" class="input-field" id="inputField" placeholder="Type a message">
+      <div class="input-icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </div>
+      <button class="send-btn" id="sendBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Demo Controls -->
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="runFullDemo()">▶️ Run Full Demo</button>
+    <button class="demo-btn" onclick="resetDemo()">🔄 Reset</button>
+  </div>
+
+  <!-- Footer -->
+  <a href="/privacy" class="footer-link">Privacy Policy</a>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const inputField = document.getElementById('inputField');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let currentStep = 0;
+    let demoRunning = false;
+
+    function getTime() {
+      return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function addBotMessage(text, extras = '') {
+      const msg = document.createElement('div');
+      msg.className = 'message bot';
+      msg.innerHTML = `
+        <div class="message-text">${text}</div>
+        ${extras}
+        <div class="message-time">${getTime()}</div>
+      `;
+      chatContainer.appendChild(msg);
+      scrollToBottom();
+      return msg;
+    }
+
+    function addUserMessage(text) {
+      const msg = document.createElement('div');
+      msg.className = 'message user';
+      msg.innerHTML = `
+        <div class="message-text">${text}</div>
+        <div class="message-time">${getTime()} <span class="check-marks">✓✓</span></div>
+      `;
+      chatContainer.appendChild(msg);
+      scrollToBottom();
+    }
+
+    function addTypingIndicator() {
+      const typing = document.createElement('div');
+      typing.className = 'typing-indicator';
+      typing.id = 'typingIndicator';
+      typing.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      `;
+      chatContainer.appendChild(typing);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      const typing = document.getElementById('typingIndicator');
+      if (typing) typing.remove();
+    }
+
+    function addQuickReplies(buttons) {
+      return `
+        <div class="quick-replies">
+          ${buttons.map(b => `<button class="quick-reply-btn" onclick="handleQuickReply('${b.id}', '${b.text}')">${b.text}</button>`).join('')}
+        </div>
+      `;
+    }
+
+    function addListOptions(options) {
+      return `
+        <div class="list-options">
+          ${options.map(o => `
+            <div class="list-option" onclick="handleListOption('${o.id}', '${o.text}')">
+              <div class="list-option-icon">${o.icon}</div>
+              <div class="list-option-text">${o.text}</div>
+              <div class="list-option-arrow">›</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function addSummaryCard(data) {
+      return `
+        <div class="summary-card">
+          <div class="summary-header">📋 Complaint Summary</div>
+          <div class="summary-row">
+            <span class="summary-label">🪪 CNIC</span>
+            <span class="summary-value">${data.cnic}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">📍 Region</span>
+            <span class="summary-value">${data.region}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">📝 Type</span>
+            <span class="summary-value">${data.type}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">📄 Details</span>
+            <span class="summary-value">${data.details}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">🗺️ Location</span>
+            <span class="summary-value attached">${data.location}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">📷 Image</span>
+            <span class="summary-value ${data.hasImage ? 'attached' : ''}">${data.hasImage ? 'Attached ✓' : 'Not attached'}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function addLocationPreview() {
+      return `
+        <div class="location-preview">
+          <div class="location-icon">📍</div>
+          <div class="location-details">
+            <div class="location-title">Shell Pump, Main Boulevard</div>
+            <div class="location-coords">33.6844° N, 73.0479° E</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function addImagePreview() {
+      return `
+        <div class="image-preview">
+          <div class="image-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>Photo uploaded</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function addSuccessBadge(complaintId) {
+      return `
+        <div class="success-badge">
+          <div class="success-icon">🎉</div>
+          <div class="success-title">Shukriya!</div>
+          <div class="success-subtitle">Aap ki complaint successfully register ho gayi hai</div>
+          <div class="complaint-id">${complaintId}</div>
+          <div class="status-badge">📊 Status: Pending</div>
+        </div>
+      `;
+    }
+
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function handleQuickReply(id, text) {
+      addUserMessage(text);
+      processStep(id);
+    }
+
+    function handleListOption(id, text) {
+      addUserMessage(text);
+      processStep(id);
+    }
+
+    async function processStep(input) {
+      currentStep++;
+      
+      await delay(500);
+      addTypingIndicator();
+      await delay(1000);
+      removeTypingIndicator();
+
+      switch(currentStep) {
+        case 1: // After Yes to greeting
+          addBotMessage(
+            `Baraye meherbani apna <b>CNIC number</b> enter karein.\n\n📝 Format: 13 digits without dashes\n📌 Example: 3520212345678`
+          );
+          break;
+          
+        case 2: // After CNIC
+          addBotMessage(
+            `Apna <b>region</b> select karein: 📍`,
+            addListOptions([
+              { id: 'islamabad', text: 'Islamabad', icon: '🏛️' },
+              { id: 'rawalpindi', text: 'Rawalpindi', icon: '🌆' },
+              { id: 'lahore', text: 'Lahore', icon: '🏰' },
+              { id: 'karachi', text: 'Karachi', icon: '🌊' },
+              { id: 'other', text: 'Other', icon: '📍' }
+            ])
+          );
+          break;
+          
+        case 3: // After Region
+          addBotMessage(
+            `Complaint ki <b>type</b> select karein:`,
+            addListOptions([
+              { id: 'shortage', text: 'Fuel shortage ⛽', icon: '⛽' },
+              { id: 'overpricing', text: 'Overpricing 💰', icon: '💰' },
+              { id: 'closed', text: 'Pump closed 🚫', icon: '🚫' },
+              { id: 'illegal', text: 'Illegal practices ⚖️', icon: '⚖️' },
+              { id: 'other', text: 'Other 📝', icon: '📝' }
+            ])
+          );
+          break;
+          
+        case 4: // After Complaint Type
+          addBotMessage(
+            `Apni complaint ki <b>tafseel</b> likhein.\n\n📝 Jitni zyada detail dein ge, utna behtar hoga.`
+          );
+          break;
+          
+        case 5: // After Details
+          addBotMessage(
+            `Pump ki <b>location</b> share karein. 📍\n\n👇 WhatsApp mein:\n1. Attachment icon (📎) press karein\n2. "Location" select karein\n3. Current location ya map se select karein`
+          );
+          break;
+          
+        case 6: // After Location
+          addBotMessage(`✅ Location receive ho gayi!`);
+          await delay(800);
+          addTypingIndicator();
+          await delay(1000);
+          removeTypingIndicator();
+          addBotMessage(
+            `Agar mumkin ho to <b>tasveer</b> upload karein. 📷\n\nYe step optional hai - aap skip bhi kar sakte hain.`,
+            addQuickReplies([
+              { id: 'skip', text: 'Skip ⏭️' }
+            ])
+          );
+          break;
+          
+        case 7: // After Image/Skip
+          addBotMessage(
+            `Baraye meherbani apni complaint ki details check karein:`,
+            addSummaryCard({
+              cnic: '35202*****678',
+              region: 'Islamabad',
+              type: 'Fuel shortage ⛽',
+              details: 'Pump par petrol khatam ho gaya hai...',
+              location: 'Attached ✓',
+              hasImage: input !== 'skip'
+            }) +
+            addQuickReplies([
+              { id: 'submit', text: 'Submit ✅' },
+              { id: 'edit', text: 'Edit ✏️' }
+            ])
+          );
+          break;
+          
+        case 8: // After Submit
+          addBotMessage(
+            ``,
+            addSuccessBadge('FC-00001')
+          );
+          await delay(1000);
+          addBotMessage(
+            `Hum jald az jald aap ki complaint par action lein ge.\n\nAgar koi aur complaint ho toh "Start" type karein.`,
+            addQuickReplies([
+              { id: 'restart', text: 'Start 🚀' }
+            ])
+          );
+          break;
+          
+        default:
+          resetDemo();
+      }
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function runFullDemo() {
+      if (demoRunning) return;
+      demoRunning = true;
+      resetDemo();
+      
+      await delay(500);
+      
+      // Step 1: Greeting
+      addBotMessage(
+        `Assalam-o-Alaikum! 🇵🇰\n\nWelcome to the <b>Fuel Complaint System</b>.\n\nAap yahan apni fuel-related complaint register kar sakte hain.\n\nKya aap shuru karna chahte hain?`,
+        addQuickReplies([
+          { id: 'yes', text: 'Yes ✅' },
+          { id: 'no', text: 'No ❌' }
+        ])
+      );
+      
+      await delay(1500);
+      addUserMessage('Yes ✅');
+      currentStep = 0;
+      
+      // Step 2: CNIC
+      await processStep('yes');
+      await delay(1500);
+      addUserMessage('3520212345678');
+      
+      // Step 3: Region
+      await processStep('cnic');
+      await delay(1500);
+      addUserMessage('Islamabad');
+      
+      // Step 4: Complaint Type
+      await processStep('islamabad');
+      await delay(1500);
+      addUserMessage('Fuel shortage ⛽');
+      
+      // Step 5: Details
+      await processStep('shortage');
+      await delay(1500);
+      addUserMessage('Pump par petrol khatam ho gaya hai. 2 din se diesel bhi available nahi. Queue mein 50+ vehicles hain aur koi information nahi mil rahi.');
+      
+      // Step 6: Location
+      await processStep('details');
+      await delay(1500);
+      
+      // Add location message with preview
+      const locMsg = document.createElement('div');
+      locMsg.className = 'message user';
+      locMsg.innerHTML = `
+        <div class="location-preview" style="background: #D9FDD3; margin: 0;">
+          <div class="location-icon">📍</div>
+          <div class="location-details">
+            <div class="location-title">Shell Pump, F-8 Markaz</div>
+            <div class="location-coords">33.7103° N, 73.0469° E</div>
+          </div>
+        </div>
+        <div class="message-time">${getTime()} <span class="check-marks">✓✓</span></div>
+      `;
+      chatContainer.appendChild(locMsg);
+      scrollToBottom();
+      
+      // Step 7: Image
+      await processStep('location');
+      await delay(1500);
+      addUserMessage('Skip ⏭️');
+      
+      // Step 8: Review
+      await processStep('skip');
+      await delay(2000);
+      addUserMessage('Submit ✅');
+      
+      // Step 9: Confirmation
+      await processStep('submit');
+      
+      demoRunning = false;
+    }
+
+    function resetDemo() {
+      currentStep = 0;
+      demoRunning = false;
+      chatContainer.innerHTML = '<div class="date-divider"><span>Today</span></div>';
+    }
+
+    // Initialize with greeting
+    window.onload = function() {
+      addBotMessage(
+        `Assalam-o-Alaikum! 🇵🇰\n\nWelcome to the <b>Fuel Complaint System</b>.\n\nAap yahan apni fuel-related complaint register kar sakte hain.\n\nKya aap shuru karna chahte hain?`,
+        addQuickReplies([
+          { id: 'yes', text: 'Yes ✅' },
+          { id: 'no', text: 'No ❌' }
+        ])
+      );
+    };
+
+    // Handle input
+    sendBtn.addEventListener('click', () => {
+      const text = inputField.value.trim();
+      if (text) {
+        addUserMessage(text);
+        inputField.value = '';
+        processStep(text);
+      }
+    });
+
+    inputField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
