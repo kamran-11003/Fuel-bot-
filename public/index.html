@@ -2,1075 +2,605 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fuel Complaint System - WhatsApp Bot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuel Complaint System — Pakistan</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --wa-green: #25D366;
-      --wa-dark-green: #128C7E;
-      --wa-teal: #075E54;
-      --wa-light-green: #DCF8C6;
-      --chat-bg: #E5DDD5;
-      --chat-bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9c9c9' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      --white: #FFFFFF;
-      --grey-100: #F7F8F9;
-      --grey-200: #E9EDEF;
-      --grey-300: #8696A0;
-      --grey-400: #667781;
-      --grey-500: #54656F;
-      --text-primary: #111B21;
-      --text-secondary: #667781;
-      --bot-bubble: #FFFFFF;
-      --user-bubble: #D9FDD3;
-      --shadow: rgba(0,0,0,0.08);
+      --green:      #25D366;
+      --green-dark: #128C7E;
+      --teal:       #075E54;
+      --white:      #FFFFFF;
+      --bg:         #F0F2F5;
+      --border:     #E9EDEF;
+      --text:       #111B21;
+      --muted:      #667781;
+      --green-light: #DCF8C6;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--grey-200);
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
     }
 
-    .phone-frame {
-      width: 100%;
-      max-width: 420px;
-      height: 90vh;
-      max-height: 850px;
-      background: var(--white);
-      border-radius: 40px;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(160deg, var(--teal) 0%, var(--green-dark) 100%);
+      padding: 60px 20px 80px;
+      text-align: center;
       position: relative;
+      overflow: hidden;
     }
 
-    .phone-frame::before {
+    .hero::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 150px;
-      height: 30px;
-      background: #1a1a1a;
-      border-radius: 0 0 20px 20px;
-      z-index: 100;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
 
-    /* Header */
-    .header {
-      background: var(--wa-teal);
-      padding: 50px 16px 16px;
-      display: flex;
+    .hero-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
-    }
-
-    .header-avatar {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-    }
-
-    .header-info {
-      flex: 1;
-    }
-
-    .header-title {
-      color: white;
-      font-size: 17px;
-      font-weight: 600;
-    }
-
-    .header-status {
-      color: rgba(255,255,255,0.8);
-      font-size: 13px;
-    }
-
-    .header-icons {
-      display: flex;
-      gap: 20px;
-      color: white;
-    }
-
-    .header-icons svg {
-      width: 22px;
-      height: 22px;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-
-    /* Chat Area */
-    .chat-container {
-      flex: 1;
-      background: var(--chat-bg);
-      background-image: var(--chat-bg-pattern);
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
       gap: 8px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
     }
 
-    .message {
-      max-width: 85%;
-      padding: 8px 12px;
-      border-radius: 8px;
-      position: relative;
-      animation: messageIn 0.3s ease-out;
+    .hero-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
     }
 
-    @keyframes messageIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .hero h1 {
+      color: white;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
     }
 
-    .message.bot {
-      background: var(--bot-bubble);
-      align-self: flex-start;
-      border-top-left-radius: 0;
-      box-shadow: 0 1px 2px var(--shadow);
+    .hero h1 span { color: var(--green); }
+
+    .hero p {
+      color: rgba(255,255,255,0.85);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
     }
 
-    .message.user {
-      background: var(--user-bubble);
-      align-self: flex-end;
-      border-top-right-radius: 0;
-      box-shadow: 0 1px 2px var(--shadow);
-    }
-
-    .message-text {
-      font-size: 14.5px;
-      line-height: 1.45;
-      color: var(--text-primary);
-      white-space: pre-wrap;
-    }
-
-    .message-time {
-      font-size: 11px;
-      color: var(--grey-400);
-      text-align: right;
-      margin-top: 4px;
-    }
-
-    .message.user .message-time {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .check-marks {
-      color: #53bdeb;
-    }
-
-    /* Quick Reply Buttons */
-    .quick-replies {
+    .hero-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .quick-reply-btn {
-      background: transparent;
-      border: 1px solid var(--wa-dark-green);
-      color: var(--wa-dark-green);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
-    }
-
-    .quick-reply-btn:hover {
-      background: var(--wa-dark-green);
-      color: white;
-    }
-
-    .quick-reply-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* List Options */
-    .list-options {
-      margin-top: 10px;
-      border-top: 1px solid var(--grey-200);
-      padding-top: 10px;
-    }
-
-    .list-option {
-      display: flex;
-      align-items: center;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
       gap: 12px;
-    }
-
-    .list-option:hover {
-      background: var(--grey-100);
-    }
-
-    .list-option-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 18px;
     }
 
-    .list-option-text {
-      flex: 1;
-      font-size: 14px;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .list-option-arrow {
-      color: var(--grey-300);
-    }
-
-    /* Summary Card */
-    .summary-card {
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-      border: 1px solid var(--grey-200);
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 8px;
-    }
-
-    .summary-header {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--grey-200);
-      display: flex;
+    .btn-primary {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-    }
-
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      font-size: 13px;
-      border-bottom: 1px dashed var(--grey-200);
-    }
-
-    .summary-row:last-child {
-      border-bottom: none;
-    }
-
-    .summary-label {
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    .summary-value {
-      color: var(--text-primary);
-      font-weight: 600;
-      text-align: right;
-      max-width: 60%;
-    }
-
-    .summary-value.attached {
-      color: var(--wa-dark-green);
-    }
-
-    /* Location Preview */
-    .location-preview {
-      background: var(--grey-100);
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .location-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #EA4335 0%, #C5221F 100%);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 24px;
-    }
-
-    .location-details {
-      flex: 1;
-    }
-
-    .location-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .location-coords {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 2px;
-    }
-
-    /* Image Preview */
-    .image-preview {
-      margin-top: 8px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: var(--grey-100);
-    }
-
-    .image-preview img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-    }
-
-    .image-placeholder {
-      height: 180px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--grey-400);
-      gap: 8px;
-    }
-
-    .image-placeholder svg {
-      width: 48px;
-      height: 48px;
-    }
-
-    /* Success Badge */
-    .success-badge {
-      background: linear-gradient(135deg, var(--wa-green) 0%, var(--wa-dark-green) 100%);
-      color: white;
-      padding: 16px;
+      background: var(--green);
+      color: #0a3d2e;
+      padding: 14px 28px;
       border-radius: 12px;
-      text-align: center;
-      margin-top: 8px;
-    }
-
-    .success-icon {
-      width: 60px;
-      height: 60px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-      font-size: 28px;
-    }
-
-    .success-title {
-      font-size: 18px;
+      font-size: 1rem;
       font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .success-subtitle {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-
-    .complaint-id {
-      background: rgba(255,255,255,0.2);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 12px;
-      font-family: monospace;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 2px;
-    }
-
-    .status-badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.3);
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-top: 8px;
-    }
-
-    /* Input Area */
-    .input-area {
-      background: var(--grey-100);
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .input-icons {
-      display: flex;
-      gap: 16px;
-      color: var(--grey-400);
-    }
-
-    .input-icons svg {
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-    }
-
-    .input-field {
-      flex: 1;
-      background: white;
-      border: none;
-      border-radius: 24px;
-      padding: 12px 16px;
-      font-size: 15px;
-      font-family: inherit;
-      outline: none;
-    }
-
-    .input-field::placeholder {
-      color: var(--grey-300);
-    }
-
-    .send-btn {
-      width: 48px;
-      height: 48px;
-      background: var(--wa-dark-green);
-      border: none;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .send-btn:hover {
-      transform: scale(1.05);
-    }
-
-    .send-btn:active {
-      transform: scale(0.95);
-    }
-
-    .send-btn svg {
-      width: 22px;
-      height: 22px;
-      color: white;
-      margin-left: 2px;
-    }
-
-    /* Typing Indicator */
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 16px 12px;
-      background: var(--bot-bubble);
-      border-radius: 8px;
-      border-top-left-radius: 0;
-      width: fit-content;
-      box-shadow: 0 1px 2px var(--shadow);
-    }
-
-    .typing-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--grey-300);
-      border-radius: 50%;
-      animation: typingBounce 1.4s infinite ease-in-out both;
-    }
-
-    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-    .typing-dot:nth-child(3) { animation-delay: 0; }
-
-    @keyframes typingBounce {
-      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-      40% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Date Divider */
-    .date-divider {
-      text-align: center;
-      margin: 16px 0;
-    }
-
-    .date-divider span {
-      background: rgba(255,255,255,0.9);
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 500;
-      box-shadow: 0 1px 2px var(--shadow);
-    }
-
-    /* Demo Controls */
-    .demo-controls {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 1000;
-    }
-
-    .demo-btn {
-      background: var(--wa-teal);
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
+      text-decoration: none;
       transition: all 0.2s;
-      font-family: inherit;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.3);
     }
 
-    .demo-btn:hover {
-      background: var(--wa-dark-green);
+    .btn-primary:hover {
+      background: #22c35e;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.25);
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.25);
       transform: translateY(-2px);
     }
 
-    .footer-link {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      font-size: 13px;
-      color: var(--grey-400);
+    /* ── Wave ── */
+    .wave {
+      background: linear-gradient(160deg, var(--teal) 0%, var(--green-dark) 100%);
+      line-height: 0;
+    }
+
+    .wave svg { display: block; width: 100%; }
+
+    /* ── Container ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ── How it works ── */
+    .section {
+      padding: 64px 20px;
+    }
+
+    .section-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .section-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 48px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .step-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      transition: box-shadow 0.2s;
+    }
+
+    .step-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .step-number {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--green-dark), var(--teal));
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .step-icon { font-size: 28px; margin-bottom: 10px; }
+
+    .step-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .step-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Complaint types ── */
+    .types-section {
+      background: var(--white);
+      padding: 64px 20px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .type-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .type-chip:hover {
+      border-color: var(--green-dark);
+      background: #f0faf5;
+    }
+
+    .type-emoji { font-size: 32px; margin-bottom: 8px; }
+
+    .type-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Info strip ── */
+    .info-strip {
+      padding: 64px 20px;
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, var(--teal) 0%, var(--green-dark) 100%);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+      color: white;
+    }
+
+    .info-box h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .info-box p {
+      opacity: 0.85;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* WhatsApp chat preview pill */
+    .chat-preview {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      text-align: left;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .chat-preview-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .chat-preview-line:last-child { margin-bottom: 0; }
+
+    .chat-avatar {
+      width: 32px; height: 32px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .chat-bubble {
+      background: white;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 8px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .chat-bubble.user {
+      background: var(--green-light);
+      border-radius: 8px 0 8px 8px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--teal);
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 28px 20px;
+      font-size: 0.82rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: rgba(255,255,255,0.8);
       text-decoration: none;
-      z-index: 1000;
+      font-weight: 500;
     }
 
-    .footer-link:hover {
-      color: var(--wa-dark-green);
-      text-decoration: underline;
+    .footer-links a:hover { color: var(--green); }
+
+    /* ── Notice banner ── */
+    .notice {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.85rem;
+      color: #92400E;
+      max-width: 700px;
+      margin: 0 auto 40px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
     }
 
-    /* Hide scrollbar */
-    .chat-container::-webkit-scrollbar {
-      width: 6px;
-    }
+    .notice strong { font-weight: 700; }
 
-    .chat-container::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .chat-container::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.2);
-      border-radius: 3px;
-    }
-
-    /* Responsive */
-    @media (max-width: 480px) {
-      body {
-        padding: 0;
-      }
-      
-      .phone-frame {
-        max-width: 100%;
-        height: 100vh;
-        max-height: none;
-        border-radius: 0;
-      }
-
-      .phone-frame::before {
-        display: none;
-      }
-
-      .header {
-        padding-top: 16px;
-      }
-
-      .demo-controls {
-        bottom: 80px;
-        right: 10px;
-      }
-
-      .footer-link {
-        bottom: 80px;
-        left: 10px;
-      }
+    @media (max-width: 600px) {
+      .hero { padding: 48px 16px 64px; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .info-box { padding: 28px 20px; }
     }
   </style>
 </head>
 <body>
-  <div class="phone-frame">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-avatar">⛽</div>
-      <div class="header-info">
-        <div class="header-title">Fuel Complaint System</div>
-        <div class="header-status">Government of Pakistan</div>
-      </div>
-      <div class="header-icons">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-        </svg>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-        </svg>
-      </div>
-    </div>
 
-    <!-- Chat Container -->
-    <div class="chat-container" id="chatContainer">
-      <div class="date-divider"><span>Today</span></div>
-      
-      <!-- Messages will be inserted here -->
-    </div>
-
-    <!-- Input Area -->
-    <div class="input-area">
-      <div class="input-icons">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-        </svg>
-      </div>
-      <input type="text" class="input-field" id="inputField" placeholder="Type a message">
-      <div class="input-icons">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-        </svg>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-        </svg>
-      </div>
-      <button class="send-btn" id="sendBtn">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-        </svg>
-      </button>
-    </div>
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">🇵🇰 Government of Pakistan</div>
+  <div class="hero-icon">⛽</div>
+  <h1>Fuel Complaint<br><span>System</span></h1>
+  <p>
+    Apni fuel-related complaints <strong style="color:var(--green)">WhatsApp</strong> ke zariye register karein —
+    bilkul asaan, fast, aur secure.
+  </p>
+  <div class="hero-actions">
+    <a href="https://wa.me/?text=Start" class="btn-primary" id="waLink">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      WhatsApp Par Shuru Karein
+    </a>
+    <a href="/demo" class="btn-secondary">
+      👁️ Bot Preview
+    </a>
   </div>
+</section>
 
-  <!-- Demo Controls -->
-  <div class="demo-controls">
-    <button class="demo-btn" onclick="runFullDemo()">▶️ Run Full Demo</button>
-    <button class="demo-btn" onclick="resetDemo()">🔄 Reset</button>
+<div class="wave" style="background:var(--bg)">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60">
+    <path fill="#075E54" d="M0,60L1440,0L1440,60L0,60Z"/>
+  </svg>
+</div>
+
+<!-- Main content -->
+<main>
+
+  <!-- How it works -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">9 Simple Steps</h2>
+      <p class="section-sub">
+        Bot automatically guide karega — koi app download karne ki zaroorat nahi
+      </p>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-icon">👋</div>
+          <div class="step-title">Greeting</div>
+          <div class="step-desc">Bot aapko welcome karega aur confirm karega ke aap shuru karna chahte hain ya nahi.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-icon">🪪</div>
+          <div class="step-title">CNIC Enter Karein</div>
+          <div class="step-desc">Apna 13-digit CNIC number enter karein (bina dashes ke). Ye verification ke liye zaroor hai.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-icon">📍</div>
+          <div class="step-title">Region Select Karein</div>
+          <div class="step-desc">List se apna city/region select karein — Islamabad, Rawalpindi, Lahore, Karachi, ya Other.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <div class="step-icon">📝</div>
+          <div class="step-title">Complaint Type</div>
+          <div class="step-desc">Complaint ki category select karein — fuel shortage, overpricing, pump closed, illegal practices, ya other.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">5</div>
+          <div class="step-icon">📄</div>
+          <div class="step-title">Details Likhein</div>
+          <div class="step-desc">Apni complaint ki tafseel apni zubaan mein likhein. Jitni zyada info utna behtar.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">6</div>
+          <div class="step-icon">🗺️</div>
+          <div class="step-title">Location Share Karein</div>
+          <div class="step-desc">Pump ki location WhatsApp location feature se share karein, ya address type kar dein.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">7</div>
+          <div class="step-icon">📷</div>
+          <div class="step-title">Photo (Optional)</div>
+          <div class="step-desc">Agar mumkin ho to pump/issue ki photo upload karein. Ya "Skip" press kar dein.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">8</div>
+          <div class="step-icon">✅</div>
+          <div class="step-title">Review &amp; Submit</div>
+          <div class="step-desc">Sab details ek summary mein dikh jaenge. Sahi ho to Submit karein, galat ho to Edit karein.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-number">9</div>
+          <div class="step-icon">🎉</div>
+          <div class="step-title">Confirmation</div>
+          <div class="step-desc">Complaint register hone par unique ID milega jaise FC-00001 aur status "Pending" hoga.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Complaint types -->
+  <section class="types-section">
+    <div class="container">
+      <div class="section-label">Coverage</div>
+      <h2 class="section-title">Kin Masail Ki Complaint Karein?</h2>
+      <p class="section-sub" style="margin-bottom:36px">
+        In 5 categories mein complaint register karein
+      </p>
+      <div class="types-grid">
+        <div class="type-chip">
+          <div class="type-emoji">⛽</div>
+          <div class="type-label">Fuel Shortage</div>
+        </div>
+        <div class="type-chip">
+          <div class="type-emoji">💰</div>
+          <div class="type-label">Overpricing</div>
+        </div>
+        <div class="type-chip">
+          <div class="type-emoji">🚫</div>
+          <div class="type-label">Pump Closed</div>
+        </div>
+        <div class="type-chip">
+          <div class="type-emoji">⚖️</div>
+          <div class="type-label">Illegal Practices</div>
+        </div>
+        <div class="type-chip">
+          <div class="type-emoji">📝</div>
+          <div class="type-label">Other</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="info-strip">
+    <div class="container">
+
+      <div class="notice">
+        <span>⚠️</span>
+        <span>
+          <strong>Zaroor Padhein:</strong> Ye service sirf fuel pump-related complaints ke liye hai.
+          Duplicate complaints 24 ghante mein accept nahi ki jaengi. Galat information dena
+          complaint reject hone ka sabab ban sakta hai.
+        </span>
+      </div>
+
+      <div class="info-box">
+        <h2>Abhi Complaint Register Karein</h2>
+        <p>
+          WhatsApp pe message karein aur bot guide karega — step by step.
+          Poora process sirf 2–3 minutes leta hai.
+        </p>
+
+        <div class="chat-preview">
+          <div class="chat-preview-line">
+            <div class="chat-avatar">⛽</div>
+            <div class="chat-bubble">Assalam-o-Alaikum! 🇵🇰 Welcome to the Fuel Complaint System. Kya aap shuru karna chahte hain?</div>
+          </div>
+          <div class="chat-preview-line" style="justify-content:flex-end">
+            <div class="chat-bubble user">Yes ✅</div>
+          </div>
+          <div class="chat-preview-line">
+            <div class="chat-avatar">⛽</div>
+            <div class="chat-bubble">Baraye meherbani apna CNIC number enter karein...</div>
+          </div>
+        </div>
+
+        <a href="https://wa.me/?text=Start" class="btn-primary" id="waLink2" style="background:white;color:var(--teal);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          WhatsApp Par Message Karein
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-links">
+    <a href="/dashboard">📊 Admin Dashboard</a>
+    <a href="/demo">👁️ Bot Preview</a>
+    <a href="/privacy">🔒 Privacy Policy</a>
   </div>
+  <p>© 2025 Fuel Complaint System — Government of Pakistan</p>
+</footer>
 
-  <!-- Footer -->
-  <a href="/privacy" class="footer-link">Privacy Policy</a>
-
-  <script>
-    const chatContainer = document.getElementById('chatContainer');
-    const inputField = document.getElementById('inputField');
-    const sendBtn = document.getElementById('sendBtn');
-
-    let currentStep = 0;
-    let demoRunning = false;
-
-    function getTime() {
-      return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    }
-
-    function addBotMessage(text, extras = '') {
-      const msg = document.createElement('div');
-      msg.className = 'message bot';
-      msg.innerHTML = `
-        <div class="message-text">${text}</div>
-        ${extras}
-        <div class="message-time">${getTime()}</div>
-      `;
-      chatContainer.appendChild(msg);
-      scrollToBottom();
-      return msg;
-    }
-
-    function addUserMessage(text) {
-      const msg = document.createElement('div');
-      msg.className = 'message user';
-      msg.innerHTML = `
-        <div class="message-text">${text}</div>
-        <div class="message-time">${getTime()} <span class="check-marks">✓✓</span></div>
-      `;
-      chatContainer.appendChild(msg);
-      scrollToBottom();
-    }
-
-    function addTypingIndicator() {
-      const typing = document.createElement('div');
-      typing.className = 'typing-indicator';
-      typing.id = 'typingIndicator';
-      typing.innerHTML = `
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-      `;
-      chatContainer.appendChild(typing);
-      scrollToBottom();
-    }
-
-    function removeTypingIndicator() {
-      const typing = document.getElementById('typingIndicator');
-      if (typing) typing.remove();
-    }
-
-    function addQuickReplies(buttons) {
-      return `
-        <div class="quick-replies">
-          ${buttons.map(b => `<button class="quick-reply-btn" onclick="handleQuickReply('${b.id}', '${b.text}')">${b.text}</button>`).join('')}
-        </div>
-      `;
-    }
-
-    function addListOptions(options) {
-      return `
-        <div class="list-options">
-          ${options.map(o => `
-            <div class="list-option" onclick="handleListOption('${o.id}', '${o.text}')">
-              <div class="list-option-icon">${o.icon}</div>
-              <div class="list-option-text">${o.text}</div>
-              <div class="list-option-arrow">›</div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function addSummaryCard(data) {
-      return `
-        <div class="summary-card">
-          <div class="summary-header">📋 Complaint Summary</div>
-          <div class="summary-row">
-            <span class="summary-label">🪪 CNIC</span>
-            <span class="summary-value">${data.cnic}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">📍 Region</span>
-            <span class="summary-value">${data.region}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">📝 Type</span>
-            <span class="summary-value">${data.type}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">📄 Details</span>
-            <span class="summary-value">${data.details}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">🗺️ Location</span>
-            <span class="summary-value attached">${data.location}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">📷 Image</span>
-            <span class="summary-value ${data.hasImage ? 'attached' : ''}">${data.hasImage ? 'Attached ✓' : 'Not attached'}</span>
-          </div>
-        </div>
-      `;
-    }
-
-    function addLocationPreview() {
-      return `
-        <div class="location-preview">
-          <div class="location-icon">📍</div>
-          <div class="location-details">
-            <div class="location-title">Shell Pump, Main Boulevard</div>
-            <div class="location-coords">33.6844° N, 73.0479° E</div>
-          </div>
-        </div>
-      `;
-    }
-
-    function addImagePreview() {
-      return `
-        <div class="image-preview">
-          <div class="image-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <span>Photo uploaded</span>
-          </div>
-        </div>
-      `;
-    }
-
-    function addSuccessBadge(complaintId) {
-      return `
-        <div class="success-badge">
-          <div class="success-icon">🎉</div>
-          <div class="success-title">Shukriya!</div>
-          <div class="success-subtitle">Aap ki complaint successfully register ho gayi hai</div>
-          <div class="complaint-id">${complaintId}</div>
-          <div class="status-badge">📊 Status: Pending</div>
-        </div>
-      `;
-    }
-
-    function scrollToBottom() {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function handleQuickReply(id, text) {
-      addUserMessage(text);
-      processStep(id);
-    }
-
-    function handleListOption(id, text) {
-      addUserMessage(text);
-      processStep(id);
-    }
-
-    async function processStep(input) {
-      currentStep++;
-      
-      await delay(500);
-      addTypingIndicator();
-      await delay(1000);
-      removeTypingIndicator();
-
-      switch(currentStep) {
-        case 1: // After Yes to greeting
-          addBotMessage(
-            `Baraye meherbani apna <b>CNIC number</b> enter karein.\n\n📝 Format: 13 digits without dashes\n📌 Example: 3520212345678`
-          );
-          break;
-          
-        case 2: // After CNIC
-          addBotMessage(
-            `Apna <b>region</b> select karein: 📍`,
-            addListOptions([
-              { id: 'islamabad', text: 'Islamabad', icon: '🏛️' },
-              { id: 'rawalpindi', text: 'Rawalpindi', icon: '🌆' },
-              { id: 'lahore', text: 'Lahore', icon: '🏰' },
-              { id: 'karachi', text: 'Karachi', icon: '🌊' },
-              { id: 'other', text: 'Other', icon: '📍' }
-            ])
-          );
-          break;
-          
-        case 3: // After Region
-          addBotMessage(
-            `Complaint ki <b>type</b> select karein:`,
-            addListOptions([
-              { id: 'shortage', text: 'Fuel shortage ⛽', icon: '⛽' },
-              { id: 'overpricing', text: 'Overpricing 💰', icon: '💰' },
-              { id: 'closed', text: 'Pump closed 🚫', icon: '🚫' },
-              { id: 'illegal', text: 'Illegal practices ⚖️', icon: '⚖️' },
-              { id: 'other', text: 'Other 📝', icon: '📝' }
-            ])
-          );
-          break;
-          
-        case 4: // After Complaint Type
-          addBotMessage(
-            `Apni complaint ki <b>tafseel</b> likhein.\n\n📝 Jitni zyada detail dein ge, utna behtar hoga.`
-          );
-          break;
-          
-        case 5: // After Details
-          addBotMessage(
-            `Pump ki <b>location</b> share karein. 📍\n\n👇 WhatsApp mein:\n1. Attachment icon (📎) press karein\n2. "Location" select karein\n3. Current location ya map se select karein`
-          );
-          break;
-          
-        case 6: // After Location
-          addBotMessage(`✅ Location receive ho gayi!`);
-          await delay(800);
-          addTypingIndicator();
-          await delay(1000);
-          removeTypingIndicator();
-          addBotMessage(
-            `Agar mumkin ho to <b>tasveer</b> upload karein. 📷\n\nYe step optional hai - aap skip bhi kar sakte hain.`,
-            addQuickReplies([
-              { id: 'skip', text: 'Skip ⏭️' }
-            ])
-          );
-          break;
-          
-        case 7: // After Image/Skip
-          addBotMessage(
-            `Baraye meherbani apni complaint ki details check karein:`,
-            addSummaryCard({
-              cnic: '35202*****678',
-              region: 'Islamabad',
-              type: 'Fuel shortage ⛽',
-              details: 'Pump par petrol khatam ho gaya hai...',
-              location: 'Attached ✓',
-              hasImage: input !== 'skip'
-            }) +
-            addQuickReplies([
-              { id: 'submit', text: 'Submit ✅' },
-              { id: 'edit', text: 'Edit ✏️' }
-            ])
-          );
-          break;
-          
-        case 8: // After Submit
-          addBotMessage(
-            ``,
-            addSuccessBadge('FC-00001')
-          );
-          await delay(1000);
-          addBotMessage(
-            `Hum jald az jald aap ki complaint par action lein ge.\n\nAgar koi aur complaint ho toh "Start" type karein.`,
-            addQuickReplies([
-              { id: 'restart', text: 'Start 🚀' }
-            ])
-          );
-          break;
-          
-        default:
-          resetDemo();
+<script>
+  // Set WhatsApp deep link using the bot's phone number from the API
+  // Falls back to generic wa.me if number isn't available
+  async function setWhatsAppLink() {
+    try {
+      const res = await fetch('/api/bot-info');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.phoneNumber) {
+        const link = `https://wa.me/${data.phoneNumber}?text=Start`;
+        document.getElementById('waLink').href  = link;
+        document.getElementById('waLink2').href = link;
       }
-    }
+    } catch (_) {}
+  }
 
-    function delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function runFullDemo() {
-      if (demoRunning) return;
-      demoRunning = true;
-      resetDemo();
-      
-      await delay(500);
-      
-      // Step 1: Greeting
-      addBotMessage(
-        `Assalam-o-Alaikum! 🇵🇰\n\nWelcome to the <b>Fuel Complaint System</b>.\n\nAap yahan apni fuel-related complaint register kar sakte hain.\n\nKya aap shuru karna chahte hain?`,
-        addQuickReplies([
-          { id: 'yes', text: 'Yes ✅' },
-          { id: 'no', text: 'No ❌' }
-        ])
-      );
-      
-      await delay(1500);
-      addUserMessage('Yes ✅');
-      currentStep = 0;
-      
-      // Step 2: CNIC
-      await processStep('yes');
-      await delay(1500);
-      addUserMessage('3520212345678');
-      
-      // Step 3: Region
-      await processStep('cnic');
-      await delay(1500);
-      addUserMessage('Islamabad');
-      
-      // Step 4: Complaint Type
-      await processStep('islamabad');
-      await delay(1500);
-      addUserMessage('Fuel shortage ⛽');
-      
-      // Step 5: Details
-      await processStep('shortage');
-      await delay(1500);
-      addUserMessage('Pump par petrol khatam ho gaya hai. 2 din se diesel bhi available nahi. Queue mein 50+ vehicles hain aur koi information nahi mil rahi.');
-      
-      // Step 6: Location
-      await processStep('details');
-      await delay(1500);
-      
-      // Add location message with preview
-      const locMsg = document.createElement('div');
-      locMsg.className = 'message user';
-      locMsg.innerHTML = `
-        <div class="location-preview" style="background: #D9FDD3; margin: 0;">
-          <div class="location-icon">📍</div>
-          <div class="location-details">
-            <div class="location-title">Shell Pump, F-8 Markaz</div>
-            <div class="location-coords">33.7103° N, 73.0469° E</div>
-          </div>
-        </div>
-        <div class="message-time">${getTime()} <span class="check-marks">✓✓</span></div>
-      `;
-      chatContainer.appendChild(locMsg);
-      scrollToBottom();
-      
-      // Step 7: Image
-      await processStep('location');
-      await delay(1500);
-      addUserMessage('Skip ⏭️');
-      
-      // Step 8: Review
-      await processStep('skip');
-      await delay(2000);
-      addUserMessage('Submit ✅');
-      
-      // Step 9: Confirmation
-      await processStep('submit');
-      
-      demoRunning = false;
-    }
-
-    function resetDemo() {
-      currentStep = 0;
-      demoRunning = false;
-      chatContainer.innerHTML = '<div class="date-divider"><span>Today</span></div>';
-    }
-
-    // Initialize with greeting
-    window.onload = function() {
-      addBotMessage(
-        `Assalam-o-Alaikum! 🇵🇰\n\nWelcome to the <b>Fuel Complaint System</b>.\n\nAap yahan apni fuel-related complaint register kar sakte hain.\n\nKya aap shuru karna chahte hain?`,
-        addQuickReplies([
-          { id: 'yes', text: 'Yes ✅' },
-          { id: 'no', text: 'No ❌' }
-        ])
-      );
-    };
-
-    // Handle input
-    sendBtn.addEventListener('click', () => {
-      const text = inputField.value.trim();
-      if (text) {
-        addUserMessage(text);
-        inputField.value = '';
-        processStep(text);
-      }
-    });
-
-    inputField.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        sendBtn.click();
-      }
-    });
-  </script>
+  setWhatsAppLink();
+</script>
 </body>
 </html>

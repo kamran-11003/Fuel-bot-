@@ -47,7 +47,13 @@ async function getSession(phoneNumber) {
     .single();
   
   if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching session:', error);
+    // Table does not exist — remind the developer to run setup
+    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      console.error('\n❌ DATABASE ERROR: Table "user_sessions" does not exist.');
+      console.error('   Run "npm run setup" and follow the instructions to create tables.\n');
+    } else {
+      console.error('Error fetching session:', error);
+    }
     throw error;
   }
   

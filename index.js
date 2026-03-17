@@ -29,6 +29,21 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Bot demo / chat simulator
+app.get('/demo', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'demo.html'));
+});
+
+// Bot info for the landing page WhatsApp link
+app.get('/api/bot-info', (req, res) => {
+  res.json({
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || null,
+    // Intentionally not exposing the actual phone number here for security.
+    // Update WHATSAPP_DISPLAY_NUMBER in .env to set the wa.me link on the landing page.
+    phoneNumber: process.env.WHATSAPP_DISPLAY_NUMBER || null
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -200,7 +215,8 @@ app.listen(PORT, () => {
    PATCH /api/complaints/:id/status - Update complaint status
 
 🌐 Pages:
-   GET  /            - WhatsApp bot prototype
+   GET  /            - Landing page / instructions
+   GET  /demo        - WhatsApp bot simulator
    GET  /dashboard   - Admin complaints dashboard
    GET  /privacy     - Privacy policy
   `);
