@@ -18,38 +18,26 @@ const STATES = {
 };
 
 // ---------------------------------------------------------------------------
-// Petrol pump brands
-// id   = API enum key (sent to backend exactly as-is)
-// title = displayed to user in WhatsApp list
-// label = full display name (used in review summary)
+// Petrol pump brands shown in the WhatsApp list (max 10 rows allowed by API)
+// id    = API enum key (sent to backend exactly as-is)
+// title = shown in WhatsApp interactive list (max 24 chars)
+// label = full display name used in review summary
 // ---------------------------------------------------------------------------
 const PUMPS = [
-  { id: 'PSO',       title: 'Pakistan State Oil', label: 'Pakistan State Oil (PSO)' },
-  { id: 'SHELL',     title: 'Shell Pakistan',      label: 'Shell Pakistan' },
-  { id: 'TOTAL',     title: 'Total PARCO',         label: 'Total PARCO' },
-  { id: 'HASCOL',    title: 'Hascol Petroleum',    label: 'Hascol Petroleum' },
-  { id: 'GO',        title: 'GO Pakistan',         label: 'Gas & Oil Pakistan (GO)' },
-  { id: 'APL',       title: 'Attock (APL)',         label: 'Attock Petroleum (APL)' },
-  { id: 'BYCO',      title: 'Byco Petroleum',      label: 'Byco Petroleum' },
-  { id: 'PARCO',     title: 'PARCO',               label: 'Pak-Arab Refinery (PARCO)' },
-  { id: 'EURO_OIL',  title: 'Euro Oil',            label: 'Euro Oil' },
-  { id: 'OILMAN',    title: 'Oilman Pakistan',     label: 'Oilman Pakistan' },
-  { id: 'PEARL',     title: 'Pearl Energy',        label: 'Pearl Energy' },
-  { id: 'AL_HABIB',  title: 'Al-Habib',            label: 'Al-Habib Petroleum' },
-  { id: 'OTHER',     title: 'Other / Unknown',     label: 'Other / Unknown' }
+  { id: 'PSO',      title: 'Pakistan State Oil', label: 'Pakistan State Oil (PSO)' },
+  { id: 'SHELL',    title: 'Shell Pakistan',     label: 'Shell Pakistan' },
+  { id: 'TOTAL',    title: 'Total PARCO',        label: 'Total PARCO' },
+  { id: 'HASCOL',   title: 'Hascol Petroleum',   label: 'Hascol Petroleum' },
+  { id: 'GO',       title: 'GO Pakistan',        label: 'Gas & Oil Pakistan (GO)' },
+  { id: 'APL',      title: 'Attock (APL)',        label: 'Attock Petroleum (APL)' },
+  { id: 'BYCO',     title: 'Byco Petroleum',     label: 'Byco Petroleum' },
+  { id: 'PARCO',    title: 'PARCO',              label: 'Pak-Arab Refinery (PARCO)' },
+  { id: 'EURO_OIL', title: 'Euro Oil',           label: 'Euro Oil' },
+  { id: 'OTHER',    title: 'Other / Unknown',    label: 'Other / Unknown' }
 ];
-
-// Split into 2 sections for WhatsApp list (max 10 rows per section)
-const PUMP_SECTIONS = [
-  {
-    title: 'Major Brands',
-    items: PUMPS.slice(0, 8)   // PSO → PARCO
-  },
-  {
-    title: 'More Brands',
-    items: PUMPS.slice(8)      // EURO_OIL → OTHER
-  }
-];
+// WhatsApp hard-limits list messages to 10 rows total.
+// OILMAN, PEARL, AL_HABIB are valid API enum values but not shown in the bot list;
+// users can select "Other" and the backend maps accordingly.
 
 // ---------------------------------------------------------------------------
 // Complaint types
@@ -159,7 +147,6 @@ function getEditFieldsForList(lang = 'en') {
 module.exports = {
   STATES,
   PUMPS,
-  PUMP_SECTIONS,
   COMPLAINT_TYPES,
   EDIT_FIELDS,
   normalizeProvince,

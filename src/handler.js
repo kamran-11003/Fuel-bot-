@@ -10,7 +10,7 @@
 const axios = require('axios');
 
 const {
-  STATES, PUMP_SECTIONS, isValidCnic, cleanCnic, isValidDetails,
+  STATES, PUMPS, isValidCnic, cleanCnic, isValidDetails,
   generateComplaintCode, getComplaintTypesForList, getEditFieldsForList,
   normalizeProvince
 } = require('./seed');
@@ -21,7 +21,7 @@ const { getSession, updateSession, resetSession, saveComplaint } = require('./se
 
 const {
   sendTextMessage, sendButtonMessage, sendListMessage,
-  sendMultiSectionListMessage, getUserInput, isStartTrigger
+  getUserInput, isStartTrigger
 } = require('./whatsapp');
 
 // ---------------------------------------------------------------------------
@@ -128,9 +128,7 @@ async function onLocation(phone, session, input) {
 }
 
 async function onPump(phone, session, input) {
-  // Match against all pump ids across both sections
-  const allPumps = PUMP_SECTIONS.flatMap(s => s.items);
-  const pumpId   = resolveListOrButton(input, allPumps);
+  const pumpId = resolveListOrButton(input, PUMPS);
 
   if (!pumpId) {
     await sendPumpList(phone, session);
@@ -338,12 +336,8 @@ async function sendLanguagePrompt(phone, session) {
 
 async function sendPumpList(phone, session) {
   const btn = session.lang === 'ur' ? 'Chunein' : 'Select Pump';
-  await sendMultiSectionListMessage(
-    phone,
-    S(session, 'PUMP_PROMPT'),
-    btn,
-    PUMP_SECTIONS
-  );
+  const sec = session.lang === 'ur' ? 'Fuel Pumps' : 'Fuel Pumps';
+  await sendListMessage(phone, S(session, 'PUMP_PROMPT'), btn, PUMPS, sec);
 }
 
 async function sendComplaintTypeList(phone, session) {
