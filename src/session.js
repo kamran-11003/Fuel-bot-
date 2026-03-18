@@ -1,294 +1,82 @@
 /**
- * Session management with Supabase persistence
+ * In-memory session and complaint storage
+ * No database required — sessions live in process memory
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const { getInitialSessionData, STATES } = require('./seed');
+const { STATES } = require('./seed');
 
-let supabase = null;
+// phone → session object
+const sessions = new Map();
 
-/**
- * Initialize Supabase client
- */
-function initSupabase() {
-  if (!supabase) {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables');
-    }
-    
-    supabase = createClient(supabaseUrl, supabaseKey);
-  }
-  return supabase;
-}
+// Submitted complaints (in-memory)
+const complaints = [];
 
-/**
- * Get Supabase client instance
- * @returns {object}
- */
-function getSupabase() {
-  return initSupabase();
-}
-
-/**
- * Get or create session for a phone number
- * @param {string} phoneNumber 
- * @returns {Promise<object>}
- */
-async function getSession(phoneNumber) {
-  const db = getSupabase();
-  
-  const { data, error } = await db
-    .from('user_sessions')
-    .select('*')
-    .eq('phone_number', phoneNumber)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') {
-    // Table does not exist — remind the developer to run setup
-    if (error.code === '42P01' || error.message?.includes('does not exist')) {
-      console.error('\n❌ DATABASE ERROR: Table "user_sessions" does not exist.');
-      console.error('   Run "npm run setup" and follow the instructions to create tables.\n');
-    } else {
-      console.error('Error fetching session:', error);
-    }
-    throw error;
-  }
-  
-  if (data) {
-    return data;
-  }
-  
-  // Create new session
-  const newSession = {
-    phone_number: phoneNumber,
-    ...getInitialSessionData(),
-    last_interaction_at: new Date().toISOString()
+function freshSession(phone) {
+  return {
+    phone,
+    state: STATES.LANGUAGE,
+    lang: 'en',
+    cnic: null,
+    province: null,
+    city: null,
+    area: null,
+    latitude: null,
+    longitude: null,
+    pump: null,
+    landmark: null,
+    complaint_type: null,
+    details: null,
+    has_image: false,
+    image_id: null,
+    created_at: new Date().toISOString()
   };
-  
-  const { data: created, error: createError } = await db
-    .from('user_sessions')
-    .insert(newSession)
-    .select()
-    .single();
-  
-  if (createError) {
-    console.error('Error creating session:', createError);
-    throw createError;
+}
+
+function getSession(phone) {
+  if (!sessions.has(phone)) {
+    sessions.set(phone, freshSession(phone));
   }
-  
-  return created;
+  return sessions.get(phone);
 }
 
-/**
- * Update session data
- * @param {string} phoneNumber 
- * @param {object} updates 
- * @returns {Promise<object>}
- */
-async function updateSession(phoneNumber, updates) {
-  const db = getSupabase();
-  
-  const { data, error } = await db
-    .from('user_sessions')
-    .update({
-      ...updates,
-      last_interaction_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('phone_number', phoneNumber)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating session:', error);
-    throw error;
-  }
-  
-  return data;
+function updateSession(phone, updates) {
+  const session = getSession(phone);
+  Object.assign(session, updates);
+  return session;
 }
 
-/**
- * Reset session to initial state
- * @param {string} phoneNumber 
- * @returns {Promise<object>}
- */
-async function resetSession(phoneNumber) {
-  return updateSession(phoneNumber, getInitialSessionData());
+function resetSession(phone) {
+  const fresh = freshSession(phone);
+  sessions.set(phone, fresh);
+  return fresh;
 }
 
-/**
- * Update session state
- * @param {string} phoneNumber 
- * @param {string} state 
- * @returns {Promise<object>}
- */
-async function setSessionState(phoneNumber, state) {
-  return updateSession(phoneNumber, { state });
-}
-
-/**
- * Save complaint to database
- * @param {object} session 
- * @returns {Promise<object>}
- */
-async function saveComplaint(session) {
-  const db = getSupabase();
-  
+function saveComplaint(session, code) {
   const complaint = {
-    phone_number: session.phone_number,
+    id: complaints.length + 1,
+    complaint_code: code,
+    phone: session.phone,
     cnic: session.cnic,
-    region: session.region,
-    complaint_type: session.complaint_type,
-    details: session.details,
+    province: session.province,
+    city: session.city,
+    area: session.area,
     latitude: session.latitude,
     longitude: session.longitude,
-    location_text: session.location_text,
-    image_url: session.image_url,
-    status: 'pending'
+    pump: session.pump,
+    landmark: session.landmark || null,
+    complaint_type: session.complaint_type,
+    details: session.details,
+    has_image: session.has_image,
+    image_id: session.image_id || null,
+    status: 'pending',
+    submitted_at: new Date().toISOString()
   };
-  
-  const { data, error } = await db
-    .from('complaints')
-    .insert(complaint)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error saving complaint:', error);
-    throw error;
-  }
-  
-  // Update complaint with generated code
-  const complaintCode = `FC-${String(data.id).padStart(5, '0')}`;
-  
-  const { data: updated, error: updateError } = await db
-    .from('complaints')
-    .update({ complaint_code: complaintCode })
-    .eq('id', data.id)
-    .select()
-    .single();
-  
-  if (updateError) {
-    console.error('Error updating complaint code:', updateError);
-    throw updateError;
-  }
-  
-  return updated;
+  complaints.push(complaint);
+  return complaint;
 }
 
-/**
- * Get last complaint by CNIC to check for duplicates
- * @param {string} cnic 
- * @returns {Promise<object|null>}
- */
-async function getLastComplaintByCnic(cnic) {
-  const db = getSupabase();
-  
-  const { data, error } = await db
-    .from('complaints')
-    .select('*')
-    .eq('cnic', cnic)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching last complaint:', error);
-    return null;
-  }
-  
-  return data;
+function getComplaints() {
+  return [...complaints].reverse();
 }
 
-/**
- * Upload image to Supabase Storage
- * @param {Buffer} imageBuffer 
- * @param {string} fileName 
- * @param {string} mimeType 
- * @returns {Promise<string>} Public URL
- */
-async function uploadImage(imageBuffer, fileName, mimeType) {
-  const db = getSupabase();
-  
-  const filePath = `complaints/${Date.now()}-${fileName}`;
-  
-  const { data, error } = await db.storage
-    .from('complaint-images')
-    .upload(filePath, imageBuffer, {
-      contentType: mimeType,
-      upsert: false
-    });
-  
-  if (error) {
-    console.error('Error uploading image:', error);
-    throw error;
-  }
-  
-  // Get public URL
-  const { data: urlData } = db.storage
-    .from('complaint-images')
-    .getPublicUrl(filePath);
-  
-  return urlData.publicUrl;
-}
-
-/**
- * Get complaint by ID
- * @param {number} id 
- * @returns {Promise<object|null>}
- */
-async function getComplaintById(id) {
-  const db = getSupabase();
-  
-  const { data, error } = await db
-    .from('complaints')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching complaint:', error);
-    return null;
-  }
-  
-  return data;
-}
-
-/**
- * Get all complaints for a phone number
- * @param {string} phoneNumber 
- * @returns {Promise<array>}
- */
-async function getComplaintsByPhone(phoneNumber) {
-  const db = getSupabase();
-  
-  const { data, error } = await db
-    .from('complaints')
-    .select('*')
-    .eq('phone_number', phoneNumber)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching complaints:', error);
-    return [];
-  }
-  
-  return data || [];
-}
-
-module.exports = {
-  initSupabase,
-  getSupabase,
-  getSession,
-  updateSession,
-  resetSession,
-  setSessionState,
-  saveComplaint,
-  getLastComplaintByCnic,
-  uploadImage,
-  getComplaintById,
-  getComplaintsByPhone
-};
+module.exports = { getSession, updateSession, resetSession, saveComplaint, getComplaints };

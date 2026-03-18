@@ -3,195 +3,234 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - Fuel Complaint System</title>
+  <title>Privacy Policy — Fuel Complaint System Pakistan</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --wa-green: #25D366;
-      --wa-dark-green: #128C7E;
-      --wa-teal: #075E54;
-      --grey-100: #F7F8F9;
-      --grey-200: #E9EDEF;
-      --grey-400: #667781;
-      --text-primary: #111B21;
-      --text-secondary: #54656F;
+      --green:      #25D366;
+      --green-dark: #128C7E;
+      --teal:       #075E54;
+      --bg:         #F0F2F5;
+      --card:       #FFFFFF;
+      --border:     #E9EDEF;
+      --text:       #111B21;
+      --muted:      #667781;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--grey-200);
-      color: var(--text-primary);
-      line-height: 1.6;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
     }
 
+    /* ── Header ── */
     .header {
-      background: var(--wa-teal);
-      color: white;
-      padding: 24px 20px;
+      background: linear-gradient(150deg, var(--teal) 0%, var(--green-dark) 100%);
+      padding: 48px 20px 56px;
       text-align: center;
     }
-
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .header p {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-
-    .back-link {
+    .header .back-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: white;
+      color: rgba(255,255,255,0.8);
       text-decoration: none;
-      font-size: 0.9rem;
-      margin-top: 12px;
-      opacity: 0.95;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      transition: color .15s;
     }
-
-    .back-link:hover {
-      text-decoration: underline;
-    }
-
-    .content {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 32px 20px 48px;
-    }
-
-    .content h2 {
-      font-size: 1.15rem;
-      color: var(--wa-teal);
-      margin: 28px 0 12px;
-      padding-bottom: 6px;
-    }
-
-    .content h2:first-child {
-      margin-top: 0;
-    }
-
-    .content p, .content ul {
-      margin-bottom: 16px;
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-    }
-
-    .content ul {
-      padding-left: 24px;
-    }
-
-    .content li {
+    .header .back-link:hover { color: #fff; }
+    .header h1 {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      color: #fff;
       margin-bottom: 8px;
     }
-
-    .updated {
-      font-size: 0.85rem;
-      color: var(--grey-400);
-      margin-bottom: 24px;
+    .header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
     }
 
-    .footer {
+    /* ── Wave ── */
+    .wave { display: block; margin-bottom: -2px; }
+
+    /* ── Content ── */
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .card ul {
+      padding-left: 20px;
+      margin-top: 10px;
+    }
+
+    .card ul li { margin-bottom: 6px; }
+
+    .highlight {
+      background: #e8f5e9;
+      border-left: 4px solid var(--green);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #1b5e20;
+      line-height: 1.6;
+    }
+
+    .last-updated {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* ── Footer ── */
+    footer {
       text-align: center;
       padding: 24px 20px;
-      font-size: 0.85rem;
-      color: var(--grey-400);
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
     }
-
-    .footer a {
-      color: var(--wa-dark-green);
-      text-decoration: none;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
+    footer a { color: var(--green-dark); text-decoration: none; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>⛽ Fuel Complaint System</h1>
-    <p>Government of Pakistan</p>
+
+<div class="header">
+  <div>
     <a href="/" class="back-link">← Back to Home</a>
   </div>
+  <h1>🔒 Privacy Policy</h1>
+  <p>Fuel Complaint System — Pakistan</p>
+</div>
 
-  <div class="content">
-    <p class="updated">Last updated: March 2025</p>
+<svg class="wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 40">
+  <path fill="#F0F2F5" d="M0,20 C360,40 1080,0 1440,20 L1440,40 L0,40 Z"/>
+</svg>
 
-    <h2>1. Introduction</h2>
-    <p>
-      This Privacy Policy describes how the Fuel Complaint System ("we", "our", "the System") collects, uses, and protects your personal information when you use our WhatsApp-based complaint service. By using this service, you consent to the practices described herein.
-    </p>
+<main>
 
-    <h2>2. Information We Collect</h2>
-    <p>When you register a fuel-related complaint via WhatsApp, we collect:</p>
+  <p class="last-updated">Last updated: March 2025</p>
+
+  <!-- Intro -->
+  <div class="card">
+    <h2>📋 Overview</h2>
+    <p>The Fuel Complaint System is a WhatsApp-based service for citizens of Pakistan to report complaints about fuel pumps — including shortages, overpricing, pump closures, and illegal practices.</p>
+    <p style="margin-top:10px;">This policy explains what data we collect, how we use it, and how it is protected. By using this service, you agree to the terms below.</p>
+  </div>
+
+  <!-- Data collected -->
+  <div class="card">
+    <h2>📥 Information We Collect</h2>
+    <p>When you submit a complaint through our WhatsApp bot, we collect:</p>
     <ul>
-      <li><strong>Phone number</strong> – Your WhatsApp number for communication</li>
-      <li><strong>CNIC</strong> – National ID for verification (13 digits)</li>
-      <li><strong>Region</strong> – Your selected region (e.g., Islamabad, Lahore)</li>
-      <li><strong>Complaint details</strong> – Description of the fuel-related issue</li>
-      <li><strong>Location</strong> – Pump location (coordinates or address)</li>
-      <li><strong>Images</strong> – Optional photos you choose to upload</li>
+      <li><strong>CNIC number</strong> — for identity verification (stored in masked form)</li>
+      <li><strong>WhatsApp phone number</strong> — automatically provided by WhatsApp; used to manage your conversation session</li>
+      <li><strong>Location</strong> — GPS coordinates of the fuel pump you are reporting, along with derived province, city, and area</li>
+      <li><strong>Fuel pump brand</strong> — selected from a list (e.g. PSO, Shell, Attock)</li>
+      <li><strong>Nearest landmark</strong> — optional text you provide to help locate the pump</li>
+      <li><strong>Complaint type</strong> — selected from predefined categories</li>
+      <li><strong>Complaint details</strong> — free-text description of your complaint</li>
+      <li><strong>Image</strong> — optional photo evidence you choose to upload</li>
     </ul>
+    <div class="highlight">
+      💡 We do <strong>not</strong> collect your full name, email address, or any information beyond what is listed above.
+    </div>
+  </div>
 
-    <h2>3. How We Use Your Information</h2>
-    <p>Your information is used to:</p>
+  <!-- How we use it -->
+  <div class="card">
+    <h2>🎯 How We Use Your Information</h2>
+    <p>The information you provide is used exclusively to:</p>
     <ul>
-      <li>Process and investigate your complaint</li>
-      <li>Contact you regarding your complaint status</li>
-      <li>Prevent duplicate or fraudulent complaints</li>
-      <li>Improve our services and analytics (in anonymized form)</li>
+      <li>Register and track your fuel complaint</li>
+      <li>Generate a unique complaint ID for your reference</li>
+      <li>Route the complaint to the appropriate regulatory authority</li>
+      <li>Maintain a complaint record for follow-up and accountability</li>
     </ul>
+    <p style="margin-top:12px;">We do <strong>not</strong> use your information for marketing, advertising, or any commercial purpose.</p>
+  </div>
 
-    <h2>4. Data Storage and Security</h2>
-    <p>
-      Your data is stored securely using Supabase (cloud database). We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, or destruction.
-    </p>
+  <!-- Storage -->
+  <div class="card">
+    <h2>🗄️ Data Storage</h2>
+    <p>Complaint data submitted via the WhatsApp bot is stored securely. Session data (your in-progress conversation) is held temporarily in server memory and is cleared when the session ends or the server restarts.</p>
+    <p style="margin-top:10px;">Your CNIC is displayed in masked form (e.g. <strong>35202*****678</strong>) in all summary messages and is never displayed in full to anyone except authorised administrators.</p>
+  </div>
 
-    <h2>5. Data Retention</h2>
-    <p>
-      Complaint records are retained as required by applicable government regulations. Session data used during the complaint flow may be cleared after submission. You may contact us to request deletion of your data where permitted by law.
-    </p>
+  <!-- Sharing -->
+  <div class="card">
+    <h2>🔗 Information Sharing</h2>
+    <p>Complaint information may be shared with:</p>
+    <ul>
+      <li>Relevant government or regulatory authorities responsible for fuel pump oversight in Pakistan</li>
+      <li>Internal system administrators for complaint management</li>
+    </ul>
+    <p style="margin-top:10px;">We do <strong>not</strong> sell, rent, or share your personal information with third parties for commercial purposes.</p>
+  </div>
 
-    <h2>6. Sharing of Information</h2>
-    <p>
-      We do not sell your personal information. Your complaint data may be shared with relevant government authorities for investigation and resolution. We may share data when required by law or to protect our rights.
-    </p>
+  <!-- WhatsApp -->
+  <div class="card">
+    <h2>💬 WhatsApp & Meta</h2>
+    <p>This service uses the <strong>Meta WhatsApp Cloud API</strong>. When you message our bot, your messages are processed through Meta's infrastructure. Please review <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener" style="color:var(--green-dark);">WhatsApp's Privacy Policy</a> for details on how Meta handles your data.</p>
+    <p style="margin-top:10px;">We only access the message content you send to the bot and your WhatsApp phone number. We do not access your WhatsApp contacts or any other account information.</p>
+  </div>
 
-    <h2>7. WhatsApp</h2>
-    <p>
-      This service operates through Meta's WhatsApp Cloud API. Your use of WhatsApp is subject to Meta's Privacy Policy. We receive messages you send to our bot and respond accordingly.
-    </p>
-
-    <h2>8. Your Rights</h2>
+  <!-- Rights -->
+  <div class="card">
+    <h2>⚖️ Your Rights</h2>
     <p>You have the right to:</p>
     <ul>
-      <li>Access the personal data we hold about you</li>
-      <li>Request correction of inaccurate data</li>
-      <li>Request deletion where applicable</li>
-      <li>Withdraw consent for processing</li>
+      <li>Know what data has been collected about you</li>
+      <li>Request deletion of your complaint data</li>
+      <li>Withdraw from the process at any time by simply not responding</li>
     </ul>
-
-    <h2>9. Contact</h2>
-    <p>
-      For privacy-related inquiries or to exercise your rights, please contact the relevant government department overseeing the Fuel Complaint System.
-    </p>
-
-    <h2>10. Changes</h2>
-    <p>
-      We may update this Privacy Policy from time to time. The "Last updated" date at the top indicates when changes were last made. Continued use of the service after changes constitutes acceptance.
-    </p>
+    <p style="margin-top:10px;">To exercise these rights, please contact the system administrator.</p>
   </div>
 
-  <div class="footer">
-    <a href="/">← Back to Fuel Complaint System</a>
+  <!-- Contact -->
+  <div class="card">
+    <h2>📞 Contact</h2>
+    <p>If you have questions about this privacy policy or how your data is handled, please contact us via the WhatsApp number listed on the <a href="/" style="color:var(--green-dark);">home page</a>.</p>
   </div>
+
+</main>
+
+<footer>
+  <p>Pakistan Fuel Complaint System &nbsp;|&nbsp; <a href="/">Home</a> &nbsp;|&nbsp; <a href="/dashboard">Admin Dashboard</a></p>
+</footer>
+
 </body>
 </html>

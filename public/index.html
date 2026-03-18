@@ -10,14 +10,15 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --green:      #25D366;
-      --green-dark: #128C7E;
-      --teal:       #075E54;
-      --white:      #FFFFFF;
-      --bg:         #F0F2F5;
-      --border:     #E9EDEF;
-      --text:       #111B21;
-      --muted:      #667781;
+      --green:       #25D366;
+      --green-dark:  #128C7E;
+      --teal:        #075E54;
+      --white:       #FFFFFF;
+      --bg:          #F0F2F5;
+      --card:        #FFFFFF;
+      --border:      #E9EDEF;
+      --text:        #111B21;
+      --muted:       #667781;
       --green-light: #DCF8C6;
     }
 
@@ -30,577 +31,367 @@
 
     /* ── Hero ── */
     .hero {
-      background: linear-gradient(160deg, var(--teal) 0%, var(--green-dark) 100%);
-      padding: 60px 20px 80px;
+      background: linear-gradient(150deg, var(--teal) 0%, var(--green-dark) 60%, #1da851 100%);
+      padding: 64px 20px 80px;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
-
     .hero::before {
       content: '';
       position: absolute;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
     }
-
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       background: rgba(255,255,255,0.15);
-      color: white;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 100px;
       padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 13px;
       font-weight: 600;
-      letter-spacing: 0.5px;
+      color: #fff;
       margin-bottom: 24px;
     }
-
     .hero-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
     }
-
     .hero h1 {
-      color: white;
-      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-size: clamp(26px, 5vw, 40px);
       font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 16px;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
     }
-
-    .hero h1 span { color: var(--green); }
-
+    .hero-urdu {
+      font-size: 18px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 16px;
+      direction: rtl;
+    }
     .hero p {
+      font-size: 16px;
       color: rgba(255,255,255,0.85);
-      font-size: 1.05rem;
-      max-width: 560px;
+      max-width: 480px;
       margin: 0 auto 36px;
       line-height: 1.6;
     }
 
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-    }
-
-    .btn-primary {
+    /* ── CTA button ── */
+    .cta-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: var(--green);
-      color: #0a3d2e;
-      padding: 14px 28px;
-      border-radius: 12px;
-      font-size: 1rem;
+      gap: 10px;
+      background: var(--white);
+      color: var(--teal);
       font-weight: 700;
+      font-size: 16px;
+      padding: 14px 32px;
+      border-radius: 100px;
       text-decoration: none;
-      transition: all 0.2s;
-      box-shadow: 0 4px 16px rgba(37,211,102,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      transition: transform .15s, box-shadow .15s;
     }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+    .cta-icon { font-size: 22px; }
 
-    .btn-primary:hover {
-      background: #22c35e;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(37,211,102,0.4);
-    }
+    /* ── Wave divider ── */
+    .wave { display: block; margin-bottom: -2px; }
 
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,0.15);
-      color: white;
-      padding: 14px 24px;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-decoration: none;
-      border: 1px solid rgba(255,255,255,0.25);
-      transition: all 0.2s;
-    }
+    /* ── Main ── */
+    main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
 
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.25);
-      transform: translateY(-2px);
-    }
-
-    /* ── Wave ── */
-    .wave {
-      background: linear-gradient(160deg, var(--teal) 0%, var(--green-dark) 100%);
-      line-height: 0;
-    }
-
-    .wave svg { display: block; width: 100%; }
-
-    /* ── Container ── */
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    /* ── How it works ── */
-    .section {
-      padding: 64px 20px;
-    }
-
-    .section-label {
-      text-align: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--green-dark);
-      margin-bottom: 8px;
-    }
-
+    /* ── Section title ── */
     .section-title {
-      text-align: center;
-      font-size: clamp(1.4rem, 4vw, 2rem);
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: 700;
       color: var(--text);
-      margin-bottom: 8px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .section-sub {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.95rem;
-      margin-bottom: 48px;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-    }
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 56px; }
 
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .step-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
+    .step {
+      display: flex;
+      gap: 16px;
       position: relative;
-      transition: box-shadow 0.2s;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      bottom: -4px;
+      width: 2px;
+      background: var(--border);
     }
 
-    .step-card:hover {
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-
-    .step-number {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--green-dark), var(--teal));
-      color: white;
-      border-radius: 10px;
+    .step-num {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 800;
-      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
     }
 
-    .step-icon { font-size: 28px; margin-bottom: 10px; }
-
-    .step-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-
-    .step-desc {
-      font-size: 0.85rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    /* ── Complaint types ── */
-    .types-section {
-      background: var(--white);
-      padding: 64px 20px;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .types-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    .type-chip {
-      background: var(--bg);
+    .step-body {
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 16px;
-      text-align: center;
-      transition: all 0.2s;
-    }
-
-    .type-chip:hover {
-      border-color: var(--green-dark);
-      background: #f0faf5;
-    }
-
-    .type-emoji { font-size: 32px; margin-bottom: 8px; }
-
-    .type-label {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    /* ── Info strip ── */
-    .info-strip {
-      padding: 64px 20px;
-    }
-
-    .info-box {
-      background: linear-gradient(135deg, var(--teal) 0%, var(--green-dark) 100%);
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 700px;
-      margin: 0 auto;
-      text-align: center;
-      color: white;
-    }
-
-    .info-box h2 {
-      font-size: 1.4rem;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .info-box p {
-      opacity: 0.85;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 28px;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* WhatsApp chat preview pill */
-    .chat-preview {
-      background: rgba(255,255,255,0.12);
       border-radius: 12px;
       padding: 16px 20px;
-      margin-bottom: 28px;
-      text-align: left;
-      max-width: 420px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .chat-preview-line {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .chat-preview-line:last-child { margin-bottom: 0; }
-
-    .chat-avatar {
-      width: 32px; height: 32px;
-      background: var(--green);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .chat-bubble {
-      background: white;
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 0 8px 8px 8px;
-      font-size: 0.82rem;
-      line-height: 1.4;
+      margin-bottom: 12px;
       flex: 1;
     }
-
-    .chat-bubble.user {
-      background: var(--green-light);
-      border-radius: 8px 0 8px 8px;
+    .step-body h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
     }
-
-    /* ── Footer ── */
-    .footer {
-      background: var(--teal);
-      color: rgba(255,255,255,0.7);
-      text-align: center;
-      padding: 28px 20px;
-      font-size: 0.82rem;
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
-    .footer-links a {
-      color: rgba(255,255,255,0.8);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .footer-links a:hover { color: var(--green); }
-
-    /* ── Notice banner ── */
-    .notice {
-      background: #FEF3C7;
-      border: 1px solid #FCD34D;
-      border-radius: 10px;
-      padding: 14px 18px;
-      font-size: 0.85rem;
-      color: #92400E;
-      max-width: 700px;
-      margin: 0 auto 40px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
+    .step-body p {
+      font-size: 14px;
+      color: var(--muted);
       line-height: 1.5;
     }
+    .step-emoji { margin-right: 6px; }
 
-    .notice strong { font-weight: 700; }
-
-    @media (max-width: 600px) {
-      .hero { padding: 48px 16px 64px; }
-      .steps-grid { grid-template-columns: 1fr; }
-      .info-box { padding: 28px 20px; }
+    /* ── Feature cards ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 56px;
     }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .feature-card .icon { font-size: 32px; margin-bottom: 12px; }
+    .feature-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Info banner ── */
+    .info-banner {
+      background: var(--green-light);
+      border: 1px solid #b2dfcd;
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+    .info-banner .icon { font-size: 24px; flex-shrink: 0; }
+    .info-banner p { font-size: 14px; color: #1a5c42; line-height: 1.6; }
+    .info-banner strong { font-weight: 700; }
+
+    /* ── Bottom CTA ── */
+    .bottom-cta { text-align: center; }
+    .bottom-cta .label { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .btn-wa {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green);
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 16px 36px;
+      border-radius: 100px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,0.45); }
+    .btn-wa svg { width: 22px; height: 22px; fill: #fff; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--green-dark); text-decoration: none; }
   </style>
 </head>
 <body>
 
 <!-- Hero -->
 <section class="hero">
-  <div class="hero-badge">🇵🇰 Government of Pakistan</div>
+  <div class="hero-badge">🇵🇰 Pakistan Fuel Complaint System</div>
   <div class="hero-icon">⛽</div>
-  <h1>Fuel Complaint<br><span>System</span></h1>
-  <p>
-    Apni fuel-related complaints <strong style="color:var(--green)">WhatsApp</strong> ke zariye register karein —
-    bilkul asaan, fast, aur secure.
-  </p>
-  <div class="hero-actions">
-    <a href="https://wa.me/?text=Start" class="btn-primary" id="waLink">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      WhatsApp Par Shuru Karein
-    </a>
-    <a href="/demo" class="btn-secondary">
-      👁️ Bot Preview
-    </a>
-  </div>
+  <h1>Report Fuel Complaints via WhatsApp</h1>
+  <p class="hero-urdu">واٹس ایپ پر فیول شکایت درج کریں</p>
+  <p>Report fuel shortages, overpricing, and pump violations directly through WhatsApp — fast, simple, bilingual.</p>
+  <a href="#" class="cta-btn" id="wa-link">
+    <span class="cta-icon">💬</span>
+    Start on WhatsApp
+  </a>
 </section>
 
-<div class="wave" style="background:var(--bg)">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60">
-    <path fill="#075E54" d="M0,60L1440,0L1440,60L0,60Z"/>
-  </svg>
-</div>
+<svg class="wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 40">
+  <path fill="#F0F2F5" d="M0,20 C360,40 1080,0 1440,20 L1440,40 L0,40 Z"/>
+</svg>
 
-<!-- Main content -->
 <main>
 
-  <!-- How it works -->
-  <section class="section">
-    <div class="container">
-      <div class="section-label">How it works</div>
-      <h2 class="section-title">9 Simple Steps</h2>
-      <p class="section-sub">
-        Bot automatically guide karega — koi app download karne ki zaroorat nahi
-      </p>
+  <!-- Info banner -->
+  <div class="info-banner">
+    <span class="icon">ℹ️</span>
+    <p>This is a <strong>WhatsApp-based bot</strong>. All complaints are submitted by messaging our WhatsApp number. This website only provides instructions. The bot supports both <strong>English and Urdu</strong>.</p>
+  </div>
 
-      <div class="steps-grid">
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-icon">👋</div>
-          <div class="step-title">Greeting</div>
-          <div class="step-desc">Bot aapko welcome karega aur confirm karega ke aap shuru karna chahte hain ya nahi.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-icon">🪪</div>
-          <div class="step-title">CNIC Enter Karein</div>
-          <div class="step-desc">Apna 13-digit CNIC number enter karein (bina dashes ke). Ye verification ke liye zaroor hai.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-icon">📍</div>
-          <div class="step-title">Region Select Karein</div>
-          <div class="step-desc">List se apna city/region select karein — Islamabad, Rawalpindi, Lahore, Karachi, ya Other.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">4</div>
-          <div class="step-icon">📝</div>
-          <div class="step-title">Complaint Type</div>
-          <div class="step-desc">Complaint ki category select karein — fuel shortage, overpricing, pump closed, illegal practices, ya other.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">5</div>
-          <div class="step-icon">📄</div>
-          <div class="step-title">Details Likhein</div>
-          <div class="step-desc">Apni complaint ki tafseel apni zubaan mein likhein. Jitni zyada info utna behtar.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">6</div>
-          <div class="step-icon">🗺️</div>
-          <div class="step-title">Location Share Karein</div>
-          <div class="step-desc">Pump ki location WhatsApp location feature se share karein, ya address type kar dein.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">7</div>
-          <div class="step-icon">📷</div>
-          <div class="step-title">Photo (Optional)</div>
-          <div class="step-desc">Agar mumkin ho to pump/issue ki photo upload karein. Ya "Skip" press kar dein.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">8</div>
-          <div class="step-icon">✅</div>
-          <div class="step-title">Review &amp; Submit</div>
-          <div class="step-desc">Sab details ek summary mein dikh jaenge. Sahi ho to Submit karein, galat ho to Edit karein.</div>
-        </div>
-        <div class="step-card">
-          <div class="step-number">9</div>
-          <div class="step-icon">🎉</div>
-          <div class="step-title">Confirmation</div>
-          <div class="step-desc">Complaint register hone par unique ID milega jaise FC-00001 aur status "Pending" hoga.</div>
-        </div>
+  <!-- Feature cards -->
+  <div class="features">
+    <div class="feature-card">
+      <div class="icon">💬</div>
+      <h4>WhatsApp First</h4>
+      <p>No app to download. Use WhatsApp you already have.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🇵🇰</div>
+      <h4>English + اردو</h4>
+      <p>Fully bilingual — choose your preferred language.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📍</div>
+      <h4>Location Aware</h4>
+      <p>Share the pump location pin — we auto-detect your city and area.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⚡</div>
+      <h4>2-Minute Process</h4>
+      <p>Simple step-by-step conversation. Done in under 2 minutes.</p>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <h2 class="section-title">📋 How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">🌐</span>Choose Language</h3>
+        <p>Select English or اردو — the bot will respond in your chosen language throughout.</p>
       </div>
     </div>
-  </section>
-
-  <!-- Complaint types -->
-  <section class="types-section">
-    <div class="container">
-      <div class="section-label">Coverage</div>
-      <h2 class="section-title">Kin Masail Ki Complaint Karein?</h2>
-      <p class="section-sub" style="margin-bottom:36px">
-        In 5 categories mein complaint register karein
-      </p>
-      <div class="types-grid">
-        <div class="type-chip">
-          <div class="type-emoji">⛽</div>
-          <div class="type-label">Fuel Shortage</div>
-        </div>
-        <div class="type-chip">
-          <div class="type-emoji">💰</div>
-          <div class="type-label">Overpricing</div>
-        </div>
-        <div class="type-chip">
-          <div class="type-emoji">🚫</div>
-          <div class="type-label">Pump Closed</div>
-        </div>
-        <div class="type-chip">
-          <div class="type-emoji">⚖️</div>
-          <div class="type-label">Illegal Practices</div>
-        </div>
-        <div class="type-chip">
-          <div class="type-emoji">📝</div>
-          <div class="type-label">Other</div>
-        </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">🪪</span>Enter Your CNIC</h3>
+        <p>Provide your 13-digit CNIC number (no dashes). This verifies your identity.</p>
       </div>
     </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="info-strip">
-    <div class="container">
-
-      <div class="notice">
-        <span>⚠️</span>
-        <span>
-          <strong>Zaroor Padhein:</strong> Ye service sirf fuel pump-related complaints ke liye hai.
-          Duplicate complaints 24 ghante mein accept nahi ki jaengi. Galat information dena
-          complaint reject hone ka sabab ban sakta hai.
-        </span>
-      </div>
-
-      <div class="info-box">
-        <h2>Abhi Complaint Register Karein</h2>
-        <p>
-          WhatsApp pe message karein aur bot guide karega — step by step.
-          Poora process sirf 2–3 minutes leta hai.
-        </p>
-
-        <div class="chat-preview">
-          <div class="chat-preview-line">
-            <div class="chat-avatar">⛽</div>
-            <div class="chat-bubble">Assalam-o-Alaikum! 🇵🇰 Welcome to the Fuel Complaint System. Kya aap shuru karna chahte hain?</div>
-          </div>
-          <div class="chat-preview-line" style="justify-content:flex-end">
-            <div class="chat-bubble user">Yes ✅</div>
-          </div>
-          <div class="chat-preview-line">
-            <div class="chat-avatar">⛽</div>
-            <div class="chat-bubble">Baraye meherbani apna CNIC number enter karein...</div>
-          </div>
-        </div>
-
-        <a href="https://wa.me/?text=Start" class="btn-primary" id="waLink2" style="background:white;color:var(--teal);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-          WhatsApp Par Message Karein
-        </a>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">📍</span>Share Pump Location</h3>
+        <p>Use WhatsApp's location pin to mark the fuel pump. We'll auto-detect your province, city, and area from the GPS coordinates.</p>
       </div>
     </div>
-  </section>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">🏪</span>Select Pump Brand</h3>
+        <p>Choose from PSO, Shell, Attock, Saudi Aramco, Total Parco, Hascol, or Other.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">📌</span>Nearest Landmark <em style="font-weight:400;font-size:12px;color:var(--muted)">(optional)</em></h3>
+        <p>Add a landmark near the pump to help authorities locate it quickly.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">📝</span>Complaint Type</h3>
+        <p>Select: Fuel Shortage, Overpricing, Pump Closed, Illegal Practices, or Other.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">📄</span>Complaint Details</h3>
+        <p>Describe what happened in your own words. More detail helps us act faster.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">8</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">📷</span>Upload Image <em style="font-weight:400;font-size:12px;color:var(--muted)">(optional)</em></h3>
+        <p>Send a photo as evidence. You can skip this step if you don't have one.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">9</div>
+      <div class="step-body">
+        <h3><span class="step-emoji">✅</span>Review & Submit</h3>
+        <p>Review a full summary of your complaint and submit. You'll receive a unique <strong>Complaint ID</strong> (e.g. FC-10234).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="bottom-cta">
+    <p class="label">Ready to file a complaint? Message the bot now:</p>
+    <a href="#" class="btn-wa" id="wa-link-bottom">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Open WhatsApp
+    </a>
+  </div>
 
 </main>
 
-<!-- Footer -->
-<footer class="footer">
-  <div class="footer-links">
-    <a href="/dashboard">📊 Admin Dashboard</a>
-    <a href="/demo">👁️ Bot Preview</a>
-    <a href="/privacy">🔒 Privacy Policy</a>
-  </div>
-  <p>© 2025 Fuel Complaint System — Government of Pakistan</p>
+<footer>
+  <p>Pakistan Fuel Complaint System &nbsp;|&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp; <a href="/dashboard">Admin Dashboard</a></p>
 </footer>
 
 <script>
-  // Set WhatsApp deep link using the bot's phone number from the API
-  // Falls back to generic wa.me if number isn't available
-  async function setWhatsAppLink() {
-    try {
-      const res = await fetch('/api/bot-info');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.phoneNumber) {
-        const link = `https://wa.me/${data.phoneNumber}?text=Start`;
-        document.getElementById('waLink').href  = link;
-        document.getElementById('waLink2').href = link;
-      }
-    } catch (_) {}
-  }
-
-  setWhatsAppLink();
+  // Load WhatsApp number from API and update links
+  fetch('/api/bot-info')
+    .then(r => r.json())
+    .then(data => {
+      const num = data.phoneNumber;
+      if (!num) return;
+      const url = `https://wa.me/${num}?text=Hi`;
+      document.getElementById('wa-link').href = url;
+      document.getElementById('wa-link-bottom').href = url;
+    })
+    .catch(() => {});
 </script>
+
 </body>
 </html>

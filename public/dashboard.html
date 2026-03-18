@@ -746,19 +746,14 @@
         <option value="rejected">Rejected</option>
       </select>
       <select class="filter-select" id="filterRegion" onchange="applyFilters()">
-        <option value="">All Regions</option>
-        <option value="Islamabad">Islamabad</option>
-        <option value="Rawalpindi">Rawalpindi</option>
-        <option value="Lahore">Lahore</option>
-        <option value="Karachi">Karachi</option>
-        <option value="Other">Other</option>
+        <option value="">All Locations</option>
       </select>
       <select class="filter-select" id="filterType" onchange="applyFilters()">
         <option value="">All Types</option>
-        <option value="Fuel shortage">Fuel shortage ⛽</option>
+        <option value="Fuel Shortage">Fuel Shortage ⛽</option>
         <option value="Overpricing">Overpricing 💰</option>
-        <option value="Pump closed">Pump closed 🚫</option>
-        <option value="Illegal practices">Illegal practices ⚖️</option>
+        <option value="Pump Closed">Pump Closed 🚫</option>
+        <option value="Illegal">Illegal Practices ⚖️</option>
         <option value="Other">Other 📝</option>
       </select>
     </div>
@@ -775,9 +770,9 @@
             <tr>
               <th>ID</th>
               <th>CNIC</th>
-              <th>Region</th>
+              <th>Location</th>
+              <th>Pump</th>
               <th>Type</th>
-              <th>Details</th>
               <th>Status</th>
               <th>Date</th>
             </tr>
@@ -854,6 +849,7 @@
       const json = await res.json();
       allComplaints = json.complaints || [];
       updateStats(allComplaints);
+      populateLocationFilter(allComplaints);
       applyFilters();
     } catch (err) {
       showTableError(err.message);
@@ -870,21 +866,28 @@
     document.getElementById('stat-rejected').textContent  = counts.rejected;
   }
 
+  function populateLocationFilter(data) {
+    const cities = [...new Set(data.map(c => c.city).filter(Boolean))].sort();
+    const sel = document.getElementById('filterRegion');
+    sel.innerHTML = '<option value="">All Locations</option>' +
+      cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
   // ── Filtering ──────────────────────────────────────────────────────────────
   function applyFilters() {
     const q      = document.getElementById('searchInput').value.toLowerCase().trim();
     const status = document.getElementById('filterStatus').value;
-    const region = document.getElementById('filterRegion').value;
+    const city   = document.getElementById('filterRegion').value;
     const type   = document.getElementById('filterType').value;
 
     filtered = allComplaints.filter(c => {
       if (status && c.status !== status) return false;
-      if (region && c.region !== region) return false;
+      if (city   && c.city !== city) return false;
       if (type   && !c.complaint_type?.includes(type)) return false;
       if (q) {
         const haystack = [
           c.complaint_code, c.cnic, c.details,
-          c.region, c.complaint_type, c.phone_number
+          c.city, c.province, c.pump, c.complaint_type, c.phone
         ].join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
       }
@@ -922,11 +925,11 @@
         <tr onclick="openModal(${c.id})">
           <td><span class="complaint-id">${c.complaint_code || '—'}</span></td>
           <td><span class="cnic-masked">${maskCnic(c.cnic)}</span></td>
-          <td>${c.region || '—'}</td>
+          <td>${[c.area, c.city, c.province].filter(Boolean).join(', ') || '—'}</td>
+          <td>${c.pump || '—'}</td>
           <td>${c.complaint_type || '—'}</td>
-          <td><div class="details-preview">${escHtml(c.details || '—')}</div></td>
           <td>${statusBadge(c.status)}</td>
-          <td class="td-muted">${formatDate(c.created_at)}</td>
+          <td class="td-muted">${formatDate(c.submitted_at || c.created_at)}</td>
         </tr>
       `).join('');
     }
@@ -954,17 +957,15 @@
     document.getElementById('modalTitle').textContent =
       complaint.complaint_code || `Complaint #${complaint.id}`;
 
-    // Body content
-    const locationHtml = complaint.latitude && complaint.longitude
-      ? `<a class="location-chip" href="https://maps.google.com/?q=${complaint.latitude},${complaint.longitude}" target="_blank">
-           📍 View on Google Maps
-         </a>`
-      : complaint.location_text
-        ? `<span>${escHtml(complaint.location_text)}</span>`
-        : `<span style="color:var(--muted)">Not provided</span>`;
+    // Location display
+    const locParts = [complaint.area, complaint.city, complaint.province].filter(Boolean);
+    const locText  = locParts.join(', ') || '—';
+    const mapsLink = complaint.latitude && complaint.longitude
+      ? `<a class="location-chip" href="https://maps.google.com/?q=${complaint.latitude},${complaint.longitude}" target="_blank">📍 View on Google Maps</a>`
+      : '';
 
-    const imageHtml = complaint.image_url
-      ? `<img class="complaint-image" src="${complaint.image_url}" alt="Complaint image" onerror="this.style.display='none'">`
+    const imageHtml = complaint.has_image
+      ? `<div class="no-image" style="color:var(--green-dark)">📷 Image attached (WhatsApp media ID: ${complaint.image_id || 'N/A'})</div>`
       : `<div class="no-image">📷 No image attached</div>`;
 
     document.getElementById('modalBody').innerHTML = `
@@ -984,12 +985,16 @@
             <span>${complaint.complaint_type || '—'}</span>
           </div>
           <div class="detail-item">
-            <label>Region</label>
-            <span>${complaint.region || '—'}</span>
+            <label>Pump Brand</label>
+            <span>${complaint.pump || '—'}</span>
+          </div>
+          <div class="detail-item">
+            <label>Landmark</label>
+            <span>${escHtml(complaint.landmark || '—')}</span>
           </div>
           <div class="detail-item">
             <label>Submitted</label>
-            <span>${formatDateFull(complaint.created_at)}</span>
+            <span>${formatDateFull(complaint.submitted_at || complaint.created_at)}</span>
           </div>
         </div>
       </div>
@@ -1005,7 +1010,7 @@
           </div>
           <div class="detail-item">
             <label>Phone</label>
-            <span class="mono">${complaint.phone_number || '—'}</span>
+            <span class="mono">${complaint.phone || '—'}</span>
           </div>
         </div>
       </div>
@@ -1021,7 +1026,8 @@
           </div>
           <div class="detail-item full">
             <label>Location</label>
-            ${locationHtml}
+            <span>${locText}</span>
+            ${mapsLink}
           </div>
         </div>
       </div>
@@ -1066,7 +1072,7 @@
     feedback.textContent = '';
 
     try {
-      const res = await fetch(`/api/complaints/${activeComplaint.id}/status`, {
+      const res = await fetch(`/api/complaints/${activeComplaint.complaint_code}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -1157,7 +1163,7 @@
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
           <p>Error: ${escHtml(msg)}</p>
-          <p style="margin-top:8px;font-size:0.75rem">Make sure the server is running and Supabase is configured.</p>
+          <p style="margin-top:8px;font-size:0.75rem">Make sure the server is running. Complaints appear here after users submit via WhatsApp.</p>
         </div>
       </td></tr>`;
     document.getElementById('tableCount').textContent = 'Error';
