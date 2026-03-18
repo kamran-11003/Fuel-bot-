@@ -1,557 +1,446 @@
+﻿'use strict';
+
 /**
- * State machine and conversation routing for Fuel Complaint Bot
+ * Conversation FSM (Finite State Machine) for the Fuel Complaint Bot.
+ *
+ * Flow:
+ *   LANGUAGE_SELECTION → GREETING → CNIC_INPUT → PROVINCE_SELECTION
+ *   → COMPLAINT_TYPE → DETAILS_INPUT → PUMP_NAME → LOCATION_INPUT
+ *   → LANDMARK_INPUT → IMAGE_UPLOAD → REVIEW ⇄ EDIT_SELECT → CONFIRMATION
+ *
+ * All display text comes from i18n.js — never hardcoded here.
+ * All state is stored in Redis via session.js.
  */
 
-const { STRINGS, buildReviewSummary, buildConfirmationMessage } = require('./strings');
+const { STATES, getSession, updateSession, resetSession } = require('./session');
 const {
-  STATES,
-  REGIONS,
-  COMPLAINT_TYPES,
-  EDIT_FIELDS,
-  isValidCnic,
-  cleanCnic,
-  isValidDetails,
-  canSubmitComplaint,
-  getRegionTitle,
-  getComplaintTypeTitle
-} = require('./seed');
+  getMessage,
+  PROVINCES, PUMPS, COMPLAINT_TYPES, EDIT_FIELDS,
+  buildReviewSummary, buildConfirmationMessage
+} = require('./i18n');
 const {
-  sendTextMessage,
-  sendButtonMessage,
-  sendListMessage,
-  downloadMedia,
-  getUserInput,
-  isStartTrigger
+  sendTextMessage, sendButtonMessage, sendListMessage,
+  downloadMedia, getUserInput, isStartTrigger
 } = require('./whatsapp');
 const {
-  getSession,
-  updateSession,
-  resetSession,
-  saveComplaint,
-  getLastComplaintByCnic,
-  uploadImage
-} = require('./session');
+  getCooldown, setCooldown,
+  saveComplaintRecord, pushToQueue
+} = require('./redis');
 
-/**
- * Main handler - routes message to appropriate state handler
- * @param {string} phoneNumber - User's phone number
- * @param {object} message - WhatsApp message object
- * @returns {Promise<void>}
- */
+// ── Validators ────────────────────────────────────────────────────────────────
+
+function isValidCnic(str)    { return /^\d{13}$/.test(str); }
+function cleanCnic(str)      { return (str || '').replace(/\D/g, ''); }
+function isValidDetails(str) { return str && str.trim().length >= 20; }
+
+function generateComplaintCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'FC-';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ── i18n shorthand ────────────────────────────────────────────────────────────
+
+function M(session, key) {
+  return getMessage(session.language || 'EN', key);
+}
+
+// ── Main entry point ──────────────────────────────────────────────────────────
+
 async function handleMessage(phoneNumber, message) {
   try {
-    // Get or create session
     let session = await getSession(phoneNumber);
-    
-    // Parse user input
-    const input = getUserInput(message);
-    
-    // Check for restart trigger
-    if (input.type === 'text' && isStartTrigger(input.value)) {
+    const input  = getUserInput(message);
+
+    // Global restart (except when already at LANGUAGE_SELECTION)
+    if (session.state !== STATES.LANGUAGE_SELECTION &&
+        input.type === 'text' && isStartTrigger(input.value)) {
       session = await resetSession(phoneNumber);
-      await handleGreeting(phoneNumber, session, input);
+      await sendTextMessage(phoneNumber, M(session, 'RESTART_MSG'));
+      await sendLanguageSelection(phoneNumber);
       return;
     }
-    
-    // Route based on current state
+
     switch (session.state) {
-      case STATES.GREETING:
-        await handleGreeting(phoneNumber, session, input);
-        break;
-        
-      case STATES.CNIC_INPUT:
-        await handleCnicInput(phoneNumber, session, input);
-        break;
-        
-      case STATES.REGION_SELECTION:
-        await handleRegionSelection(phoneNumber, session, input);
-        break;
-        
-      case STATES.COMPLAINT_TYPE:
-        await handleComplaintType(phoneNumber, session, input);
-        break;
-        
-      case STATES.DETAILS_INPUT:
-        await handleDetailsInput(phoneNumber, session, input);
-        break;
-        
-      case STATES.LOCATION_INPUT:
-        await handleLocationInput(phoneNumber, session, input);
-        break;
-        
-      case STATES.IMAGE_UPLOAD:
-        await handleImageUpload(phoneNumber, session, input);
-        break;
-        
-      case STATES.REVIEW:
-        await handleReview(phoneNumber, session, input);
-        break;
-        
-      case STATES.EDIT_SELECT:
-        await handleEditSelect(phoneNumber, session, input);
-        break;
-        
-      case STATES.CONFIRMATION:
-        await handleConfirmation(phoneNumber, session, input);
-        break;
-        
+      case STATES.LANGUAGE_SELECTION: await handleLanguageSelection(phoneNumber, session, input); break;
+      case STATES.GREETING:           await handleGreeting(phoneNumber, session, input);           break;
+      case STATES.CNIC_INPUT:         await handleCnicInput(phoneNumber, session, input);          break;
+      case STATES.PROVINCE_SELECTION: await handleProvinceSelection(phoneNumber, session, input);  break;
+      case STATES.COMPLAINT_TYPE:     await handleComplaintType(phoneNumber, session, input);      break;
+      case STATES.DETAILS_INPUT:      await handleDetailsInput(phoneNumber, session, input);       break;
+      case STATES.PUMP_NAME:          await handlePumpName(phoneNumber, session, input);           break;
+      case STATES.LOCATION_INPUT:     await handleLocationInput(phoneNumber, session, input);      break;
+      case STATES.LANDMARK_INPUT:     await handleLandmarkInput(phoneNumber, session, input);      break;
+      case STATES.IMAGE_UPLOAD:       await handleImageUpload(phoneNumber, session, input);        break;
+      case STATES.REVIEW:             await handleReview(phoneNumber, session, input);             break;
+      case STATES.EDIT_SELECT:        await handleEditSelect(phoneNumber, session, input);         break;
+      case STATES.CONFIRMATION:       await handleConfirmation(phoneNumber, session, input);       break;
       default:
-        // Unknown state - reset to greeting
-        await resetSession(phoneNumber);
-        await sendGreetingMessage(phoneNumber);
-        break;
+        session = await resetSession(phoneNumber);
+        await sendLanguageSelection(phoneNumber);
     }
-  } catch (error) {
-    console.error('Handler error:', error);
-    await sendTextMessage(phoneNumber, STRINGS.ERROR_GENERIC);
+  } catch (err) {
+    console.error('[handler] Error:', err);
+    try {
+      const s = await getSession(phoneNumber);
+      await sendTextMessage(phoneNumber, M(s, 'ERROR_GENERIC'));
+    } catch (_) { /* ignore */ }
   }
 }
 
-// ============ State Handlers ============
+// ── State handlers ────────────────────────────────────────────────────────────
 
-/**
- * Handle GREETING state
- */
-async function handleGreeting(phoneNumber, session, input) {
-  // If fresh session, send welcome message
-  if (!input.value || (input.type === 'text' && isStartTrigger(input.value))) {
-    await sendGreetingMessage(phoneNumber);
-    return;
-  }
-  
-  // Handle button response
+async function handleLanguageSelection(phoneNumber, session, input) {
+  let lang = null;
   if (input.type === 'button') {
-    if (input.value === 'yes') {
-      // Move to CNIC input
-      await updateSession(phoneNumber, { state: STATES.CNIC_INPUT });
-      await sendTextMessage(phoneNumber, STRINGS.ASK_CNIC);
-    } else if (input.value === 'no') {
-      // Send goodbye
-      await sendTextMessage(phoneNumber, STRINGS.GOODBYE);
-      await resetSession(phoneNumber);
-    }
-    return;
+    if (input.value === 'lang_en') lang = 'EN';
+    if (input.value === 'lang_ur') lang = 'UR';
+  } else if (input.type === 'text') {
+    const v = (input.value || '').toLowerCase().trim();
+    if (['1', 'en', 'english'].includes(v))            lang = 'EN';
+    if (['2', 'ur', 'urdu', 'اردو'].includes(v))       lang = 'UR';
   }
-  
-  // Handle text "yes" or "no"
-  if (input.type === 'text') {
-    const text = input.value.toLowerCase().trim();
-    if (['yes', 'haan', 'han', 'ji', 'ok', 'okay'].includes(text)) {
-      await updateSession(phoneNumber, { state: STATES.CNIC_INPUT });
-      await sendTextMessage(phoneNumber, STRINGS.ASK_CNIC);
-    } else if (['no', 'nahi', 'nhi', 'na'].includes(text)) {
-      await sendTextMessage(phoneNumber, STRINGS.GOODBYE);
-      await resetSession(phoneNumber);
-    } else {
-      // Re-send greeting
-      await sendGreetingMessage(phoneNumber);
-    }
-  }
+  if (!lang) { await sendLanguageSelection(phoneNumber); return; }
+
+  session = await updateSession(phoneNumber, { language: lang, state: STATES.GREETING });
+  await sendGreeting(phoneNumber, session);
 }
 
-/**
- * Handle CNIC_INPUT state
- */
+async function handleGreeting(phoneNumber, session, input) {
+  const yes = (input.type === 'button' && input.value === 'start') ||
+              (input.type === 'text' &&
+               ['yes','haan','han','ji','ok','okay','1'].includes((input.value||'').toLowerCase().trim()));
+  if (yes) {
+    session = await updateSession(phoneNumber, { state: STATES.CNIC_INPUT });
+    await sendTextMessage(phoneNumber, M(session, 'ASK_CNIC'));
+    return;
+  }
+  await sendGreeting(phoneNumber, session);
+}
+
 async function handleCnicInput(phoneNumber, session, input) {
-  if (input.type !== 'text') {
-    await sendTextMessage(phoneNumber, STRINGS.ASK_CNIC);
-    return;
-  }
-  
+  if (input.type !== 'text') { await sendTextMessage(phoneNumber, M(session, 'ASK_CNIC')); return; }
+
   const cnic = cleanCnic(input.value);
-  
-  if (!isValidCnic(cnic)) {
-    await sendTextMessage(phoneNumber, STRINGS.INVALID_CNIC);
+  if (!isValidCnic(cnic)) { await sendTextMessage(phoneNumber, M(session, 'INVALID_CNIC')); return; }
+
+  if (await getCooldown(cnic)) {
+    await sendTextMessage(phoneNumber, M(session, 'DUPLICATE_WARNING'));
     return;
   }
-  
-  // Check for duplicate complaints
-  const lastComplaint = await getLastComplaintByCnic(cnic);
-  if (lastComplaint && !canSubmitComplaint(lastComplaint.created_at)) {
-    await sendTextMessage(phoneNumber, STRINGS.DUPLICATE_WARNING);
-    return;
-  }
-  
-  // Save CNIC and move to region selection
-  await updateSession(phoneNumber, {
-    cnic: cnic,
-    state: STATES.REGION_SELECTION
-  });
-  
-  await sendListMessage(
-    phoneNumber,
-    STRINGS.ASK_REGION,
-    'Select Region',
-    REGIONS,
-    'Regions'
-  );
+
+  session = await updateSession(phoneNumber, { cnic, state: STATES.PROVINCE_SELECTION });
+  await sendProvinceList(phoneNumber, session);
 }
 
-/**
- * Handle REGION_SELECTION state
- */
-async function handleRegionSelection(phoneNumber, session, input) {
-  let regionId = null;
-  
-  if (input.type === 'list' || input.type === 'button') {
-    regionId = input.value;
-  } else if (input.type === 'text') {
-    // Try to match text to region
-    const text = input.value.toLowerCase().trim();
-    const match = REGIONS.find(r => 
-      r.id === text || r.title.toLowerCase() === text
-    );
-    if (match) regionId = match.id;
-  }
-  
-  if (!regionId) {
-    await sendListMessage(
-      phoneNumber,
-      STRINGS.ASK_REGION,
-      'Select Region',
-      REGIONS,
-      'Regions'
-    );
-    return;
-  }
-  
-  // Save region and move to complaint type
-  await updateSession(phoneNumber, {
-    region: getRegionTitle(regionId),
-    state: STATES.COMPLAINT_TYPE
-  });
-  
-  await sendListMessage(
-    phoneNumber,
-    STRINGS.ASK_COMPLAINT_TYPE,
-    'Select Type',
-    COMPLAINT_TYPES,
-    'Complaint Types'
-  );
+async function handleProvinceSelection(phoneNumber, session, input) {
+  const id = pickOption(input, PROVINCES[session.language || 'EN']);
+  if (!id) { await sendProvinceList(phoneNumber, session); return; }
+
+  const nextState = session.editing ? STATES.REVIEW : STATES.COMPLAINT_TYPE;
+  session = await updateSession(phoneNumber, { province: id, state: nextState, editing: false });
+  if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+  else await sendComplaintTypeList(phoneNumber, session);
 }
 
-/**
- * Handle COMPLAINT_TYPE state
- */
+async function handlePumpName(phoneNumber, session, input) {
+  const id = pickOption(input, PUMPS[session.language || 'EN']);
+  if (!id) { await sendPumpList(phoneNumber, session); return; }
+
+  const nextState = session.editing ? STATES.REVIEW : STATES.LOCATION_INPUT;
+  session = await updateSession(phoneNumber, { pumpName: id, state: nextState, editing: false });
+  if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+  else await sendTextMessage(phoneNumber, M(session, 'ASK_LOCATION'));
+}
+
 async function handleComplaintType(phoneNumber, session, input) {
-  let typeId = null;
-  
-  if (input.type === 'list' || input.type === 'button') {
-    typeId = input.value;
-  } else if (input.type === 'text') {
-    const text = input.value.toLowerCase().trim();
-    const match = COMPLAINT_TYPES.find(t => 
-      t.id === text || t.title.toLowerCase().includes(text)
-    );
-    if (match) typeId = match.id;
-  }
-  
-  if (!typeId) {
-    await sendListMessage(
-      phoneNumber,
-      STRINGS.ASK_COMPLAINT_TYPE,
-      'Select Type',
-      COMPLAINT_TYPES,
-      'Complaint Types'
-    );
-    return;
-  }
-  
-  // Save complaint type and move to details
-  await updateSession(phoneNumber, {
-    complaint_type: getComplaintTypeTitle(typeId),
-    state: STATES.DETAILS_INPUT
-  });
-  
-  await sendTextMessage(phoneNumber, STRINGS.ASK_DETAILS);
+  const id = pickOption(input, COMPLAINT_TYPES[session.language || 'EN']);
+  if (!id) { await sendComplaintTypeList(phoneNumber, session); return; }
+
+  const nextState = session.editing ? STATES.REVIEW : STATES.DETAILS_INPUT;
+  session = await updateSession(phoneNumber, { complaintType: id, state: nextState, editing: false });
+  if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+  else await sendDetailsPrompt(phoneNumber, session);
 }
 
-/**
- * Handle DETAILS_INPUT state
- */
-async function handleDetailsInput(phoneNumber, session, input) {
-  if (input.type !== 'text') {
-    await sendTextMessage(phoneNumber, STRINGS.ASK_DETAILS);
-    return;
-  }
-  
-  const details = input.value.trim();
-  
-  if (!isValidDetails(details)) {
-    await sendTextMessage(phoneNumber, STRINGS.DETAILS_TOO_SHORT);
-    return;
-  }
-  
-  // Save details and move to location
-  await updateSession(phoneNumber, {
-    details: details,
-    state: STATES.LOCATION_INPUT
-  });
-  
-  await sendTextMessage(phoneNumber, STRINGS.ASK_LOCATION);
-}
-
-/**
- * Handle LOCATION_INPUT state
- */
 async function handleLocationInput(phoneNumber, session, input) {
   if (input.type === 'location') {
-    // Got location coordinates
-    const { latitude, longitude, name, address } = input.value;
-    
-    await updateSession(phoneNumber, {
-      latitude: latitude,
-      longitude: longitude,
-      location_text: address || name || null,
-      state: STATES.IMAGE_UPLOAD
-    });
-    
-    await sendTextMessage(phoneNumber, STRINGS.LOCATION_RECEIVED);
-    await sendImageUploadPrompt(phoneNumber);
-    return;
-  }
-  
-  if (input.type === 'text') {
-    // Accept text address as fallback
-    const address = input.value.trim();
-    
-    if (address.length < 10) {
-      await sendTextMessage(phoneNumber, STRINGS.INVALID_LOCATION);
-      return;
-    }
-    
-    await updateSession(phoneNumber, {
-      location_text: address,
-      state: STATES.IMAGE_UPLOAD
-    });
-    
-    await sendImageUploadPrompt(phoneNumber);
-    return;
-  }
-  
-  await sendTextMessage(phoneNumber, STRINGS.ASK_LOCATION);
-}
-
-/**
- * Handle IMAGE_UPLOAD state
- */
-async function handleImageUpload(phoneNumber, session, input) {
-  // Check for skip button
-  if (input.type === 'button' && input.value === 'skip') {
-    await updateSession(phoneNumber, { state: STATES.REVIEW });
-    const updatedSession = await getSession(phoneNumber);
-    await sendReviewMessage(phoneNumber, updatedSession);
-    return;
-  }
-  
-  // Check for skip text
-  if (input.type === 'text') {
-    const text = input.value.toLowerCase().trim();
-    if (['skip', 'no', 'nahi', 'nhi'].includes(text)) {
-      await updateSession(phoneNumber, { state: STATES.REVIEW });
-      const updatedSession = await getSession(phoneNumber);
-      await sendReviewMessage(phoneNumber, updatedSession);
-      return;
-    }
-  }
-  
-  // Handle image upload
-  if (input.type === 'image') {
-    try {
-      const { id, mimeType } = input.value;
-      
-      // Download image from WhatsApp
-      const { buffer } = await downloadMedia(id);
-      
-      // Upload to Supabase storage
-      const fileName = `${phoneNumber}-${Date.now()}.jpg`;
-      const imageUrl = await uploadImage(buffer, fileName, mimeType);
-      
-      await updateSession(phoneNumber, {
-        image_url: imageUrl,
-        state: STATES.REVIEW
+    const { latitude, longitude } = input.value;
+    if (latitude && longitude) {
+      const nextState = session.editing ? STATES.REVIEW : STATES.LANDMARK_INPUT;
+      session = await updateSession(phoneNumber, {
+        latitude, longitude,
+        state: nextState,
+        editing: false
       });
-      
-      await sendTextMessage(phoneNumber, STRINGS.IMAGE_RECEIVED);
-      const updatedSession = await getSession(phoneNumber);
-      await sendReviewMessage(phoneNumber, updatedSession);
-    } catch (error) {
-      console.error('Image upload error:', error);
-      await sendTextMessage(phoneNumber, STRINGS.ERROR_GENERIC);
-      await sendImageUploadPrompt(phoneNumber);
+      await sendTextMessage(phoneNumber, M(session, 'LOCATION_RECEIVED'));
+      if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+      else await sendLandmarkPrompt(phoneNumber, session);
+      return;
+    }
+  }
+  await sendTextMessage(phoneNumber, M(session, 'INVALID_LOCATION'));
+}
+
+async function handleLandmarkInput(phoneNumber, session, input) {
+  if (input.type === 'text' && (input.value || '').trim().length >= 3) {
+    const nextState = session.editing ? STATES.REVIEW : STATES.IMAGE_UPLOAD;
+    session = await updateSession(phoneNumber, {
+      landmark: input.value.trim(),
+      state: nextState,
+      editing: false
+    });
+    await sendTextMessage(phoneNumber, M(session, 'LANDMARK_RECEIVED'));
+    if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+    else await sendImageUpload(phoneNumber, session);
+    return;
+  }
+  await sendTextMessage(phoneNumber, M(session, 'INVALID_LANDMARK'));
+}
+
+async function handleImageUpload(phoneNumber, session, input) {
+  const isSkip = (input.type === 'button' && input.value === 'skip_image') ||
+                 (input.type === 'text' && ['skip','no','0'].includes((input.value||'').toLowerCase().trim()));
+  if (isSkip) {
+    session = await updateSession(phoneNumber, { imageMediaId: null, state: STATES.REVIEW });
+    await sendReview(phoneNumber, session);
+    return;
+  }
+  if (input.type === 'image') {
+    const mediaId = input.value?.id;
+    if (mediaId) {
+      session = await updateSession(phoneNumber, { imageMediaId: mediaId, state: STATES.REVIEW });
+      await sendTextMessage(phoneNumber, M(session, 'IMAGE_RECEIVED'));
+      await sendReview(phoneNumber, session);
+      return;
+    }
+  }
+  await sendImageUpload(phoneNumber, session);
+}
+
+async function handleDetailsInput(phoneNumber, session, input) {
+  if (input.type === 'text') {
+    const details = (input.value || '').trim();
+    if (isValidDetails(details)) {
+      const nextState = session.editing ? STATES.REVIEW : STATES.PUMP_NAME;
+      session = await updateSession(phoneNumber, { details, state: nextState, editing: false });
+      if (nextState === STATES.REVIEW) await sendReview(phoneNumber, session);
+      else await sendPumpList(phoneNumber, session);
+    } else {
+      await sendTextMessage(phoneNumber, M(session, 'DETAILS_TOO_SHORT'));
     }
     return;
   }
-  
-  // Invalid input - re-prompt
-  await sendImageUploadPrompt(phoneNumber);
+  await sendDetailsPrompt(phoneNumber, session);
 }
 
-/**
- * Handle REVIEW state
- */
 async function handleReview(phoneNumber, session, input) {
   if (input.type === 'button') {
-    if (input.value === 'submit') {
-      // Save complaint
-      try {
-        const complaint = await saveComplaint(session);
-        
-        // Send confirmation
-        await sendTextMessage(
-          phoneNumber,
-          buildConfirmationMessage(complaint.complaint_code)
-        );
-        
-        // Reset session for next complaint
-        await resetSession(phoneNumber);
-        await updateSession(phoneNumber, { state: STATES.CONFIRMATION });
-      } catch (error) {
-        console.error('Error saving complaint:', error);
-        await sendTextMessage(phoneNumber, STRINGS.ERROR_GENERIC);
-      }
-      return;
-    }
-    
-    if (input.value === 'edit') {
-      // Move to edit selection
-      await updateSession(phoneNumber, { state: STATES.EDIT_SELECT });
-      await sendEditSelectMessage(phoneNumber);
+    if (input.value === 'submit') { await submitComplaintAndConfirm(phoneNumber, session); return; }
+    if (input.value === 'edit')   {
+      session = await updateSession(phoneNumber, { state: STATES.EDIT_SELECT });
+      await sendEditSelect(phoneNumber, session);
       return;
     }
   }
-  
-  // Re-send review
-  await sendReviewMessage(phoneNumber, session);
+  await sendReview(phoneNumber, session);
 }
 
-/**
- * Handle EDIT_SELECT state
- */
 async function handleEditSelect(phoneNumber, session, input) {
-  let fieldId = null;
-  
-  if (input.type === 'list' || input.type === 'button') {
-    fieldId = input.value;
-  }
-  
-  if (!fieldId) {
-    await sendEditSelectMessage(phoneNumber);
-    return;
-  }
-  
-  // Route to appropriate state for editing
+  let fieldId = (input.type === 'list' || input.type === 'button') ? input.value : null;
+  if (!fieldId) { await sendEditSelect(phoneNumber, session); return; }
+
   switch (fieldId) {
-    case 'complaint_type':
-      await updateSession(phoneNumber, { state: STATES.COMPLAINT_TYPE });
-      await sendListMessage(
-        phoneNumber,
-        STRINGS.ASK_COMPLAINT_TYPE,
-        'Select Type',
-        COMPLAINT_TYPES,
-        'Complaint Types'
-      );
+    case 'province':
+      session = await updateSession(phoneNumber, { state: STATES.PROVINCE_SELECTION, editing: true });
+      await sendProvinceList(phoneNumber, session);
       break;
-      
+    case 'complaintType':
+      session = await updateSession(phoneNumber, { state: STATES.COMPLAINT_TYPE, editing: true });
+      await sendComplaintTypeList(phoneNumber, session);
+      break;
     case 'details':
-      await updateSession(phoneNumber, { state: STATES.DETAILS_INPUT });
-      await sendTextMessage(phoneNumber, STRINGS.ASK_DETAILS);
+      session = await updateSession(phoneNumber, { state: STATES.DETAILS_INPUT, editing: true });
+      await sendDetailsPrompt(phoneNumber, session);
       break;
-      
+    case 'pumpName':
+      session = await updateSession(phoneNumber, { state: STATES.PUMP_NAME, editing: true });
+      await sendPumpList(phoneNumber, session);
+      break;
     case 'location':
-      await updateSession(phoneNumber, { state: STATES.LOCATION_INPUT });
-      await sendTextMessage(phoneNumber, STRINGS.ASK_LOCATION);
+      session = await updateSession(phoneNumber, { state: STATES.LOCATION_INPUT, editing: true });
+      await sendTextMessage(phoneNumber, M(session, 'ASK_LOCATION'));
       break;
-      
+    case 'landmark':
+      session = await updateSession(phoneNumber, { state: STATES.LANDMARK_INPUT, editing: true });
+      await sendLandmarkPrompt(phoneNumber, session);
+      break;
     case 'image':
-      await updateSession(phoneNumber, { state: STATES.IMAGE_UPLOAD });
-      await sendImageUploadPrompt(phoneNumber);
+      session = await updateSession(phoneNumber, { state: STATES.IMAGE_UPLOAD, editing: true });
+      await sendImageUpload(phoneNumber, session);
       break;
-      
     default:
-      await sendEditSelectMessage(phoneNumber);
+      await sendEditSelect(phoneNumber, session);
   }
 }
 
-/**
- * Handle CONFIRMATION state (post-submission)
- */
 async function handleConfirmation(phoneNumber, session, input) {
-  // Accept text "start" variants OR the Start button reply
-  const isRestart =
-    (input.type === 'text' && isStartTrigger(input.value)) ||
-    (input.type === 'button' && input.value === 'start');
-
-  if (isRestart) {
-    await resetSession(phoneNumber);
-    await sendGreetingMessage(phoneNumber);
+  const isNew = (input.type === 'button' && input.value === 'new_complaint') ||
+                (input.type === 'text'   && isStartTrigger(input.value));
+  if (isNew) {
+    session = await resetSession(phoneNumber);
+    await sendLanguageSelection(phoneNumber);
     return;
   }
-
-  // Send restart prompt
-  await sendButtonMessage(
-    phoneNumber,
-    STRINGS.RESTART_PROMPT,
-    [{ id: 'start', title: STRINGS.START_BTN }]
-  );
+  await sendButtonMessage(phoneNumber, M(session, 'CONFIRMATION_FOOTER'),
+    [{ id: 'new_complaint', title: M(session, 'NEW_COMPLAINT_BTN').slice(0, 20) }]);
 }
 
-// ============ Message Helpers ============
+// ── Submission ────────────────────────────────────────────────────────────────
 
-/**
- * Send greeting message with buttons
- */
-async function sendGreetingMessage(phoneNumber) {
-  await sendButtonMessage(
+async function submitComplaintAndConfirm(phoneNumber, session) {
+  // Download image buffer now (WhatsApp media tokens expire in ~5 min)
+  let imageBase64 = null;
+  if (session.imageMediaId) {
+    try {
+      const { buffer } = await downloadMedia(session.imageMediaId);
+      imageBase64 = buffer.toString('base64');
+    } catch (imgErr) {
+      console.warn('[handler] Image download failed — submitting without image:', imgErr.message);
+    }
+  }
+
+  const complaintCode = generateComplaintCode();
+  const draft = {
+    sessionToken:  session.sessionToken,
     phoneNumber,
-    STRINGS.WELCOME,
-    [
-      { id: 'yes', title: STRINGS.WELCOME_YES_BTN },
-      { id: 'no', title: STRINGS.WELCOME_NO_BTN }
-    ]
-  );
+    language:      session.language,
+    cnic:          session.cnic,
+    province:      session.province,
+    complaintType: session.complaintType,
+    details:       session.details,
+    pumpName:      session.pumpName,
+    latitude:      session.latitude      || null,
+    longitude:     session.longitude     || null,
+    landmark:      session.landmark      || null,
+    imageBase64,
+    complaintCode,
+    submittedAt:   new Date().toISOString(),
+    status:        'pending',
+    _retryCount:   0
+  };
+
+  // Persist complaint record (30 days, for status notifications)
+  await saveComplaintRecord(complaintCode, draft);
+
+  // Push to dispatch queue
+  await pushToQueue(draft);
+
+  // CNIC 24-hour cooldown
+  await setCooldown(session.cnic);
+
+  // Advance session state
+  session = await updateSession(phoneNumber, { state: STATES.CONFIRMATION });
+
+  // Send confirmation
+  const confirmBody = buildConfirmationMessage(session, complaintCode);
+  await sendButtonMessage(phoneNumber, confirmBody,
+    [{ id: 'new_complaint', title: M(session, 'NEW_COMPLAINT_BTN').slice(0, 20) }]);
 }
 
-/**
- * Send image upload prompt with skip button
- */
-async function sendImageUploadPrompt(phoneNumber) {
-  await sendButtonMessage(
-    phoneNumber,
-    STRINGS.ASK_IMAGE,
-    [{ id: 'skip', title: STRINGS.SKIP_BTN }]
-  );
+// ── Message senders ───────────────────────────────────────────────────────────
+
+async function sendLanguageSelection(phoneNumber) {
+  await sendButtonMessage(phoneNumber,
+    getMessage('EN', 'LANGUAGE_SELECT'),
+    [{ id: 'lang_en', title: 'English' }, { id: 'lang_ur', title: 'اردو' }]);
 }
 
-/**
- * Send review summary with submit/edit buttons
- */
-async function sendReviewMessage(phoneNumber, session) {
+async function sendGreeting(phoneNumber, session) {
+  await sendButtonMessage(phoneNumber, M(session, 'GREETING'),
+    [{ id: 'start', title: M(session, 'START_BTN').slice(0, 20) }]);
+}
+
+async function sendProvinceList(phoneNumber, session) {
+  const lang = session.language || 'EN';
+  await sendListMessage(phoneNumber,
+    M(session, 'ASK_PROVINCE'),
+    M(session, 'SELECT_PROVINCE_BTN'),
+    PROVINCES[lang],
+    M(session, 'PROVINCES_SECTION'));
+}
+
+async function sendPumpList(phoneNumber, session) {
+  const lang = session.language || 'EN';
+  await sendListMessage(phoneNumber,
+    M(session, 'ASK_PUMP'),
+    M(session, 'SELECT_PUMP_BTN'),
+    PUMPS[lang],
+    M(session, 'PUMPS_SECTION'));
+}
+
+async function sendComplaintTypeList(phoneNumber, session) {
+  const lang = session.language || 'EN';
+  await sendListMessage(phoneNumber,
+    M(session, 'ASK_COMPLAINT_TYPE'),
+    M(session, 'SELECT_TYPE_BTN'),
+    COMPLAINT_TYPES[lang],
+    M(session, 'TYPES_SECTION'));
+}
+
+async function sendImageUpload(phoneNumber, session) {
+  await sendButtonMessage(phoneNumber, M(session, 'ASK_IMAGE'),
+    [{ id: 'skip_image', title: M(session, 'SKIP_BTN').slice(0, 20) }]);
+}
+
+async function sendLandmarkPrompt(phoneNumber, session) {
+  await sendTextMessage(phoneNumber, M(session, 'ASK_LANDMARK'));
+}
+
+async function sendDetailsPrompt(phoneNumber, session) {
+  await sendTextMessage(phoneNumber, M(session, 'ASK_DETAILS_REQUIRED'));
+}
+
+async function sendReview(phoneNumber, session) {
   const summary = buildReviewSummary(session);
-  
-  await sendButtonMessage(
-    phoneNumber,
-    summary,
-    [
-      { id: 'submit', title: STRINGS.SUBMIT_BTN },
-      { id: 'edit', title: STRINGS.EDIT_BTN }
-    ]
-  );
+  await sendButtonMessage(phoneNumber, summary, [
+    { id: 'submit', title: M(session, 'SUBMIT_BTN').slice(0, 20) },
+    { id: 'edit',   title: M(session, 'EDIT_BTN').slice(0, 20) }
+  ]);
 }
+
+async function sendEditSelect(phoneNumber, session) {
+  const lang = session.language || 'EN';
+  await sendListMessage(phoneNumber,
+    M(session, 'ASK_EDIT_FIELD'),
+    M(session, 'SELECT_FIELD_BTN'),
+    EDIT_FIELDS[lang],
+    M(session, 'FIELDS_SECTION'));
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
 
 /**
- * Send edit field selection
+ * Extract an option ID from a list/button reply or matching text input.
+ * Performs a case-insensitive match against option IDs and titles.
  */
-async function sendEditSelectMessage(phoneNumber) {
-  await sendListMessage(
-    phoneNumber,
-    STRINGS.ASK_EDIT_FIELD,
-    'Select Field',
-    EDIT_FIELDS,
-    'Edit Options'
-  );
+function pickOption(input, options) {
+  if (input.type === 'list' || input.type === 'button') {
+    const val = input.value || '';
+    // Exact match (IDs are uppercase)
+    if (options.find(o => o.id === val))             return val;
+    // Case-insensitive match
+    const up = val.toUpperCase();
+    const m  = options.find(o => o.id.toUpperCase() === up);
+    return m ? m.id : null;
+  }
+  if (input.type === 'text') {
+    const t = (input.value || '').toLowerCase().trim();
+    const m = options.find(o => o.id.toLowerCase() === t || o.title.toLowerCase() === t);
+    return m ? m.id : null;
+  }
+  return null;
 }
 
-module.exports = {
-  handleMessage
-};
+module.exports = { handleMessage };

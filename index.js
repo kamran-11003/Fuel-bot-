@@ -1,223 +1,156 @@
+﻿'use strict';
+
 /**
- * Fuel Complaint Bot - Express Server
- * WhatsApp Cloud API webhook handler
+ * Fuel Complaint Bot — Express server
+ *
+ * Routes:
+ *   GET/POST /webhook                      WhatsApp Cloud API webhook
+ *   POST     /api/complaints/:code/status  Proactive status update (in_progress / resolved)
+ *   GET      /api/queue/length             Current dispatch queue depth
+ *   GET      /health                       Liveness probe
+ *   GET      /api/bot-info                 Landing page WhatsApp link helper
+ *   Static   / | /privacy
  */
 
 require('dotenv').config();
 
 const express = require('express');
-const path = require('path');
-const { parseWebhookMessage, markAsRead } = require('./src/whatsapp');
-const { handleMessage } = require('./src/handler');
-const { initSupabase } = require('./src/session');
+const path    = require('path');
+
+const { parseWebhookMessage, markAsRead, sendTextMessage } = require('./src/whatsapp');
+const { handleMessage }    = require('./src/handler');
+const { startCronWorker }  = require('./src/cron');
+const {
+  getComplaintRecord,
+  updateComplaintRecord,
+  queueLength
+} = require('./src/redis');
+const { getMessage } = require('./src/i18n');
 
 const app = express();
-
-// Parse JSON bodies
 app.use(express.json());
-
-// Serve static files from public folder
 app.use(express.static('public'));
 
-// Privacy page
-app.get('/privacy', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
-});
+// ── Static pages ──────────────────────────────────────────────────────────────
 
-// Admin dashboard
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
+app.get('/privacy',   (_, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 
-// Bot demo / chat simulator
-app.get('/demo', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'demo.html'));
-});
+// ── Utility endpoints ─────────────────────────────────────────────────────────
 
-// Bot info for the landing page WhatsApp link
-app.get('/api/bot-info', (req, res) => {
+app.get('/api/bot-info', (_, res) => {
   res.json({
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || null,
-    // Intentionally not exposing the actual phone number here for security.
-    // Update WHATSAPP_DISPLAY_NUMBER in .env to set the wa.me link on the landing page.
-    phoneNumber: process.env.WHATSAPP_DISPLAY_NUMBER || null
+    phoneNumber:   process.env.WHATSAPP_DISPLAY_NUMBER  || null
   });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', (_, res) =>
+  res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+app.get('/api/queue/length', async (_, res) => {
+  try {
+    res.json({ success: true, queueLength: await queueLength() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-/**
- * GET /webhook - Meta webhook verification
- * Meta sends a GET request to verify the webhook URL
- */
+// ── WhatsApp webhook ──────────────────────────────────────────────────────────
+
 app.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
+  const mode      = req.query['hub.mode'];
+  const token     = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  
-  const verifyToken = process.env.WEBHOOK_VERIFY_TOKEN;
-  
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Webhook verified successfully');
-    res.status(200).send(challenge);
-  } else {
-    console.error('Webhook verification failed');
-    res.sendStatus(403);
+
+  if (mode === 'subscribe' && token === process.env.WEBHOOK_VERIFY_TOKEN) {
+    console.log('Webhook verified');
+    return res.status(200).send(challenge);
   }
+  res.sendStatus(403);
 });
 
-/**
- * POST /webhook - Incoming WhatsApp messages
- * This is the main entry point for all incoming messages
- */
 app.post('/webhook', async (req, res) => {
-  // Return 200 immediately to acknowledge receipt
-  res.sendStatus(200);
-  
+  res.sendStatus(200); // Acknowledge immediately
+
   try {
-    const body = req.body;
-    
-    // Log incoming payload (for debugging)
-    console.log('Webhook received:', JSON.stringify(body, null, 2));
-    
-    // Parse the webhook message
-    const parsed = parseWebhookMessage(body);
-    
-    if (!parsed) {
-      console.log('No message to process');
-      return;
-    }
-    
+    const parsed = parseWebhookMessage(req.body);
+    if (!parsed) return;
+
     const { messageId, from, message } = parsed;
-    
-    console.log(`Message from ${from}:`, message.type);
-    
-    // Mark message as read (async, don't wait)
     markAsRead(messageId).catch(console.error);
-    
-    // Handle the message through the state machine
     await handleMessage(from, message);
-    
-  } catch (error) {
-    console.error('Webhook processing error:', error);
+  } catch (err) {
+    console.error('[webhook] Error:', err);
   }
 });
 
-/**
- * API endpoint to get complaints (for admin dashboard)
- */
-app.get('/api/complaints', async (req, res) => {
-  try {
-    const { getSupabase } = require('./src/session');
-    const db = getSupabase();
-    
-    const { data, error } = await db
-      .from('complaints')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    
-    if (error) throw error;
-    
-    res.json({ success: true, complaints: data });
-  } catch (error) {
-    console.error('Error fetching complaints:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+// ── Status update endpoint (called by admin / gov API callback) ───────────────
 
-/**
- * API endpoint to get complaint by ID
- */
-app.get('/api/complaints/:id', async (req, res) => {
+app.post('/api/complaints/:code/status', async (req, res) => {
   try {
-    const { getSupabase } = require('./src/session');
-    const db = getSupabase();
-    
-    const { data, error } = await db
-      .from('complaints')
-      .select('*')
-      .eq('id', req.params.id)
-      .single();
-    
-    if (error) throw error;
-    
-    if (!data) {
-      return res.status(404).json({ success: false, error: 'Complaint not found' });
-    }
-    
-    res.json({ success: true, complaint: data });
-  } catch (error) {
-    console.error('Error fetching complaint:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+    const { code }    = req.params;
+    const { status, remarks } = req.body;
 
-/**
- * API endpoint to update complaint status
- */
-app.patch('/api/complaints/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'in_progress', 'resolved', 'rejected'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+    const valid = ['in_progress', 'resolved'];
+    if (!valid.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `status must be one of: ${valid.join(', ')}`
       });
     }
-    
-    const { getSupabase } = require('./src/session');
-    const db = getSupabase();
-    
-    const { data, error } = await db
-      .from('complaints')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    res.json({ success: true, complaint: data });
-  } catch (error) {
-    console.error('Error updating complaint:', error);
-    res.status(500).json({ success: false, error: error.message });
+
+    const complaint = await getComplaintRecord(code);
+    if (!complaint) {
+      return res.status(404).json({ success: false, error: 'Complaint not found' });
+    }
+
+    // Validate remarks for resolved status
+    if (status === 'resolved' && !(remarks || '').trim()) {
+      return res.status(400).json({ success: false, error: 'remarks is required for resolved status' });
+    }
+
+    // Sanitise remarks before embedding in message to prevent injection
+    const safeRemarks = (remarks || '').trim().replace(/[<>"]/g, '');
+
+    // Persist updated status
+    await updateComplaintRecord(code, { status, updatedAt: new Date().toISOString() });
+
+    // Build and send WhatsApp notification in the user's language
+    const lang = complaint.language || 'EN';
+    const msgFn = getMessage(lang, status === 'in_progress' ? 'STATUS_IN_PROGRESS_MSG' : 'STATUS_RESOLVED_MSG');
+    const msg   = status === 'in_progress' ? msgFn(code) : msgFn(code, safeRemarks);
+
+    await sendTextMessage(complaint.phoneNumber, msg);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[status-update] Error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Start server
+// ── Start server ──────────────────────────────────────────────────────────────
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Fuel Complaint Bot server running on port ${PORT}`);
-  
-  // Initialize Supabase connection
-  try {
-    initSupabase();
-    console.log('✅ Supabase connected');
-  } catch (error) {
-    console.error('❌ Supabase connection failed:', error.message);
-  }
-  
-  console.log(`
-📱 Webhook endpoints:
-   GET  /webhook  - Meta verification
-   POST /webhook  - Incoming messages
+  console.log(`\n🚀 Fuel Complaint Bot running on port ${PORT}`);
 
-🔧 API endpoints:
-   GET   /api/complaints            - List all complaints
-   GET   /api/complaints/:id        - Get complaint by ID
-   PATCH /api/complaints/:id/status - Update complaint status
+  startCronWorker();
+
+  console.log(`
+📱 Webhook:
+   GET  /webhook          Meta verification
+   POST /webhook          Incoming messages
+
+🔔 Admin / Gov API callbacks:
+   POST /api/complaints/:code/status   Update status (in_progress | resolved)
+   GET  /api/queue/length              Queue depth
 
 🌐 Pages:
-   GET  /            - Landing page / instructions
-   GET  /demo        - WhatsApp bot simulator
-   GET  /dashboard   - Admin complaints dashboard
-   GET  /privacy     - Privacy policy
+   /            Landing page
+   /demo        WhatsApp simulator
+   /dashboard   Admin dashboard
+   /privacy     Privacy policy
   `);
 });

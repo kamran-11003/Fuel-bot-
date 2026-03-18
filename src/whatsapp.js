@@ -369,13 +369,15 @@ function getUserInput(message) {
 
 /**
  * Check if message is a start/restart trigger
+ * Supports English and Urdu trigger words.
  * @param {string} text 
  * @returns {boolean}
  */
 function isStartTrigger(text) {
   if (!text) return false;
   const normalized = text.toLowerCase().trim();
-  return ['start', 'hi', 'hello', 'shuru', 'restart', 'menu'].includes(normalized);
+  return ['start', 'hi', 'hello', 'shuru', 'restart', 'menu',
+          'ہیلو', 'شروع', 'مینو', 'دوبارہ'].includes(normalized);
 }
 
 module.exports = {
