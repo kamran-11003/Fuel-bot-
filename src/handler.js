@@ -108,7 +108,8 @@ async function onLocation(phone, session, input) {
   if (input.type === 'location') {
     const { latitude, longitude } = input.value;
 
-    const geo = await reverseGeocode(latitude, longitude);
+    // Pass language so city/area names come back in the user's chosen script
+    const geo = await reverseGeocode(latitude, longitude, session.lang);
 
     updateSession(phone, {
       latitude,
@@ -280,9 +281,6 @@ async function onConfirmation(phone, session, input) {
 // ---------------------------------------------------------------------------
 
 async function doSubmit(phone, session) {
-  const code      = generateComplaintCode();
-  const complaint = saveComplaint(session, code);
-
   // Build the API payload — matches the backend contract exactly
   const payload = {
     user: {
@@ -292,7 +290,7 @@ async function doSubmit(phone, session) {
     location: {
       lat:             session.latitude,
       lng:             session.longitude,
-      city:            session.city    || null,
+      city:            session.city     || null,
       province:        session.province || null,
       nearestLandmark: session.landmark || null
     },
@@ -301,8 +299,7 @@ async function doSubmit(phone, session) {
       pumpBrand:   session.pump,             // enum key e.g. "PSO"
       description: session.details,
       images:      session.has_image ? [{ mediaId: session.image_id }] : []
-    },
-    complaintCode: code
+    }
   };
 
   console.log('\n╔══════════════════════════════════════╗');
@@ -311,16 +308,31 @@ async function doSubmit(phone, session) {
   console.log(JSON.stringify(payload, null, 2));
   console.log('═══════════════════════════════════════\n');
 
-  // Forward to external API (placeholder — set COMPLAINT_API_URL in .env)
+  // Try to POST to backend and use the complaint ID from the response
+  let complaintCode = null;
   const apiUrl = process.env.COMPLAINT_API_URL;
+
   if (apiUrl) {
-    axios.post(apiUrl, payload, { timeout: 5000 })
-      .then(() => console.log(`API: complaint ${code} sent`))
-      .catch(e => console.warn('API call skipped:', e.message));
+    try {
+      const resp = await axios.post(apiUrl, payload, { timeout: 8000 });
+      const data = resp.data || {};
+      // Accept any of these common ID fields from the backend response
+      complaintCode = data.complaintId || data.complaint_code || data.id || data.code || null;
+      console.log(`✅ API accepted complaint. ID from backend: ${complaintCode}`);
+    } catch (e) {
+      console.warn('⚠️  API call failed, using local fallback ID:', e.message);
+    }
   }
 
+  // Fall back to a local ID if backend didn't return one or API is not configured
+  if (!complaintCode) {
+    complaintCode = generateComplaintCode();
+    console.log(`ℹ️  Using local complaint code: ${complaintCode}`);
+  }
+
+  saveComplaint(session, complaintCode);
   updateSession(phone, { state: STATES.CONFIRMATION });
-  await sendTextMessage(phone, S(session, 'CONFIRM_MSG', code));
+  await sendTextMessage(phone, S(session, 'CONFIRM_MSG', complaintCode));
 }
 
 // ---------------------------------------------------------------------------
@@ -335,22 +347,25 @@ async function sendLanguagePrompt(phone, session) {
 }
 
 async function sendPumpList(phone, session) {
-  const btn = session.lang === 'ur' ? 'Chunein' : 'Select Pump';
-  const sec = session.lang === 'ur' ? 'Fuel Pumps' : 'Fuel Pumps';
+  const ur  = session.lang === 'ur';
+  const btn = ur ? 'منتخب کریں' : 'Select Pump';
+  const sec = ur ? 'فیول پمپس' : 'Fuel Pumps';
   await sendListMessage(phone, S(session, 'PUMP_PROMPT'), btn, PUMPS, sec);
 }
 
 async function sendComplaintTypeList(phone, session) {
+  const ur    = session.lang === 'ur';
   const types = getComplaintTypesForList(session.lang);
-  const btn   = session.lang === 'ur' ? 'Nau Chunein' : 'Select Type';
-  const sec   = session.lang === 'ur' ? 'Shikayat Ki Nau' : 'Complaint Types';
+  const btn   = ur ? 'منتخب کریں' : 'Select Type';
+  const sec   = ur ? 'شکایت کی نوعیت' : 'Complaint Types';
   await sendListMessage(phone, S(session, 'COMPLAINT_TYPE_PROMPT'), btn, types, sec);
 }
 
 async function sendEditSelectList(phone, session) {
+  const ur     = session.lang === 'ur';
   const fields = getEditFieldsForList(session.lang);
-  const btn    = session.lang === 'ur' ? 'Chunein' : 'Select Field';
-  const sec    = session.lang === 'ur' ? 'Fields' : 'Edit Options';
+  const btn    = ur ? 'منتخب کریں' : 'Select Field';
+  const sec    = ur ? 'تبدیلی کے اختیارات' : 'Edit Options';
   await sendListMessage(phone, S(session, 'EDIT_PROMPT'), btn, fields, sec);
 }
 
@@ -391,12 +406,20 @@ function isSkip(input) {
 
 /**
  * Reverse geocode lat/lng using OpenStreetMap Nominatim
- * Returns { province, city, area } with province normalised to API enum
+ * @param {string} lang - 'en' or 'ur'; controls the language of returned city/area names
+ * Returns { province, city, area }
+ *   - province is always normalised to the API enum (English key)
+ *   - city/area are in the requested language
  */
-async function reverseGeocode(lat, lon) {
+async function reverseGeocode(lat, lon, lang = 'en') {
   try {
     const resp = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-      params:  { lat, lon, format: 'json' },
+      params: {
+        lat,
+        lon,
+        format:          'json',
+        'accept-language': lang === 'ur' ? 'ur' : 'en'
+      },
       headers: { 'User-Agent': 'FuelComplaintBot/1.0 (Pakistan)' },
       timeout: 5000
     });
@@ -404,6 +427,7 @@ async function reverseGeocode(lat, lon) {
     const a = resp.data?.address || {};
 
     return {
+      // Province is normalised to English API enum regardless of display language
       province: normalizeProvince(a.state || a.state_district || null),
       city:     a.city || a.town || a.village || a.county || null,
       area:     a.suburb || a.neighbourhood || a.quarter || a.road || null

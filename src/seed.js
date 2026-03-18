@@ -46,32 +46,42 @@ const PUMPS = [
 // ur   = Urdu (Roman) label shown in WhatsApp list
 // ---------------------------------------------------------------------------
 const COMPLAINT_TYPES = [
-  { id: 'SHORT_MEASUREMENT', en: 'Short Measurement',   ur: 'Kam Miqdar' },
-  { id: 'FUEL_QUALITY',      en: 'Fuel Quality Issue',  ur: 'Petrol Kharab' },
-  { id: 'OVERCHARGING',      en: 'Overcharging',        ur: 'Zyada Qeemat' },
-  { id: 'REFUSED_SERVICE',   en: 'Refused to Serve',    ur: 'Service Se Inkar' },
-  { id: 'ADULTERATION',      en: 'Adulteration',        ur: 'Milawat' },
-  { id: 'ILLEGAL_STATION',   en: 'Illegal Station',     ur: 'Ghair Qanooni' },
-  { id: 'MISBEHAVIOR',       en: 'Staff Misbehavior',   ur: 'Bura Bartao' },
-  { id: 'OTHER',             en: 'Other',               ur: 'Doosri Shikayat' }
+  { id: 'SHORT_MEASUREMENT', en: 'Short Measurement',   ur: 'کم مقدار' },
+  { id: 'FUEL_QUALITY',      en: 'Fuel Quality Issue',  ur: 'پیٹرول خراب' },
+  { id: 'OVERCHARGING',      en: 'Overcharging',        ur: 'زیادہ قیمت' },
+  { id: 'REFUSED_SERVICE',   en: 'Refused to Serve',    ur: 'سروس سے انکار' },
+  { id: 'ADULTERATION',      en: 'Adulteration',        ur: 'ملاوٹ' },
+  { id: 'ILLEGAL_STATION',   en: 'Illegal Station',     ur: 'غیر قانونی اسٹیشن' },
+  { id: 'MISBEHAVIOR',       en: 'Staff Misbehavior',   ur: 'بدسلوکی' },
+  { id: 'OTHER',             en: 'Other',               ur: 'دیگر شکایت' }
 ];
 
 // ---------------------------------------------------------------------------
 // Provinces — allowed enum values for the API
 // ---------------------------------------------------------------------------
 const PROVINCE_MAP = {
-  punjab:                      'Punjab',
-  sindh:                       'Sindh',
-  'khyber pakhtunkhwa':        'KPK',
-  kpk:                         'KPK',
-  'khyber-pakhtunkhwa':        'KPK',
-  balochistan:                 'Balochistan',
+  // English names (from Nominatim en)
+  punjab:                        'Punjab',
+  sindh:                         'Sindh',
+  'khyber pakhtunkhwa':          'KPK',
+  kpk:                           'KPK',
+  'khyber-pakhtunkhwa':          'KPK',
+  balochistan:                   'Balochistan',
   'islamabad capital territory': 'Islamabad',
-  islamabad:                   'Islamabad',
-  'gilgit-baltistan':          'Gilgit Baltistan',
-  'gilgit baltistan':          'Gilgit Baltistan',
-  'azad kashmir':              'Azad Kashmir',
-  'azad jammu and kashmir':    'Azad Kashmir'
+  islamabad:                     'Islamabad',
+  'gilgit-baltistan':            'Gilgit Baltistan',
+  'gilgit baltistan':            'Gilgit Baltistan',
+  'azad kashmir':                'Azad Kashmir',
+  'azad jammu and kashmir':      'Azad Kashmir',
+  // Urdu names (from Nominatim ur)
+  'پنجاب':                       'Punjab',
+  'سندھ':                        'Sindh',
+  'خیبر پختونخوا':               'KPK',
+  'بلوچستان':                    'Balochistan',
+  'اسلام آباد':                  'Islamabad',
+  'گلگت بلتستان':                'Gilgit Baltistan',
+  'آزاد کشمیر':                  'Azad Kashmir',
+  'آزاد جموں و کشمیر':           'Azad Kashmir'
 };
 
 /**
@@ -87,11 +97,11 @@ function normalizeProvince(raw) {
 // Edit fields
 // ---------------------------------------------------------------------------
 const EDIT_FIELDS = [
-  { id: 'pump',           en: 'Pump Brand',       ur: 'Pump Ka Naam' },
-  { id: 'landmark',       en: 'Landmark',         ur: 'Landmark' },
-  { id: 'complaint_type', en: 'Complaint Type',   ur: 'Shikayat Ki Nau' },
-  { id: 'details',        en: 'Details',          ur: 'Tafseel' },
-  { id: 'image',          en: 'Image',            ur: 'Tasveer' }
+  { id: 'pump',           en: 'Pump Brand',     ur: 'پمپ کا نام' },
+  { id: 'landmark',       en: 'Landmark',       ur: 'قریبی نشان' },
+  { id: 'complaint_type', en: 'Complaint Type', ur: 'شکایت کی نوعیت' },
+  { id: 'details',        en: 'Details',        ur: 'تفصیل' },
+  { id: 'image',          en: 'Image',          ur: 'تصویر' }
 ];
 
 // ---------------------------------------------------------------------------

@@ -71,63 +71,63 @@ const STRINGS = {
 
   ur: {
     LANGUAGE_PROMPT:
-      `🇵🇰 *Fuel Complaint System* mein khush amdeed.\n\nPakistan mein fuel pump shikayat darj karein.\n\nZaban chunein:`,
+      `🇵🇰 *فیول شکایت نظام* میں خوش آمدید۔\n\nپاکستان میں فیول پمپ کی شکایات درج کریں۔\n\nزبان منتخب کریں:`,
 
     CNIC_PROMPT:
-      `Baraye meherbani apna *CNIC number* darj karein.\n\n📝 13 ank, bina dash ke\n📌 Misaal: 3520212345678`,
+      `براہ کرم اپنا *شناختی کارڈ نمبر* درج کریں۔\n\n📝 ۱۳ ہندسے، بغیر ڈیش کے\n📌 مثال: 3520212345678`,
 
     CNIC_INVALID:
-      `⚠️ CNIC ghalat hai. Baraye meherbani *13 ank* darj karein bina dash ke.\n\n📌 Misaal: 3520212345678`,
+      `⚠️ شناختی کارڈ نمبر غلط ہے۔ براہ کرم بالکل *۱۳ ہندسے* بغیر ڈیش کے درج کریں۔\n\n📌 مثال: 3520212345678`,
 
     LOCATION_PROMPT:
-      `📍 Pump ki *location share* karein.\n\nWhatsApp mein:\n1. 📎 attachment icon dabaein\n2. *Location* chunein\n3. Pump ki location map par share karein`,
+      `📍 پمپ کی *لوکیشن شیئر* کریں۔\n\nواٹس ایپ میں:\n1. 📎 اٹیچمنٹ آئیکن دبائیں\n2. *لوکیشن* منتخب کریں\n3. پمپ کی لوکیشن نقشے پر شیئر کریں`,
 
     LOCATION_INVALID:
-      `⚠️ Location nahi mili.\n\nBaraye meherbani WhatsApp *location pin* share karein (text address nahi).`,
+      `⚠️ لوکیشن موصول نہیں ہوئی۔\n\nبراہ کرم واٹس ایپ *لوکیشن پن* شیئر کریں (متن کا پتہ نہیں)۔`,
 
-    LOCATION_RECEIVED: `✅ Location mil gayi!`,
+    LOCATION_RECEIVED: `✅ لوکیشن موصول ہو گئی!`,
 
-    PUMP_PROMPT: `*Fuel pump* ka naam chunein:`,
+    PUMP_PROMPT: `*فیول پمپ* کا نام منتخب کریں:`,
 
     LANDMARK_PROMPT:
-      `📌 Pump ke *qareeb ka landmark* likhein (ikhtiyari).\n\nMisaal: Barkat Market ke pass, Lahore\n\nYa Skip karein.`,
+      `📌 پمپ کے *قریبی نشان* درج کریں (اختیاری)۔\n\nمثال: بارکت مارکیٹ کے قریب، لاہور\n\nیا آگے بڑھیں۔`,
 
-    COMPLAINT_TYPE_PROMPT: `*Shikayat ki nau* chunein:`,
+    COMPLAINT_TYPE_PROMPT: `*شکایت کی نوعیت* منتخب کریں:`,
 
     DETAILS_PROMPT:
-      `📝 Apni shikayat ki tafseel likhein.\n\nJitni zyada tafseel, utni jald karyawai.`,
+      `📝 اپنی شکایت کی تفصیل درج کریں۔\n\nجتنی زیادہ تفصیل، اتنی جلد کارروائی۔`,
 
     DETAILS_TOO_SHORT:
-      `⚠️ Thori aur tafseel likhein (kam az kam 10 haroof).`,
+      `⚠️ تھوڑی اور تفصیل درج کریں (کم از کم ۱۰ حروف)۔`,
 
     IMAGE_PROMPT:
-      `📷 Saboot ke taur par tasveer upload karein (ikhtiyari).\n\nYa Skip karein.`,
+      `📷 ثبوت کے طور پر تصویر اپلوڈ کریں (اختیاری)۔\n\nیا آگے بڑھیں۔`,
 
-    IMAGE_RECEIVED: `✅ Tasveer mil gayi!`,
+    IMAGE_RECEIVED: `✅ تصویر موصول ہو گئی!`,
 
     REVIEW_HEADER:
-      `📋 *Shikayat Ka Khulasa*\n\nJama karne se pehle check karein:`,
+      `📋 *شکایت کا خلاصہ*\n\nجمع کرنے سے پہلے جائزہ لیں:`,
 
-    EDIT_PROMPT: `Kya tabdeel karna chahte hain?`,
+    EDIT_PROMPT: `آپ کیا تبدیل کرنا چاہتے ہیں؟`,
 
     CONFIRM_MSG: (code) =>
-      `🎉 *Shikayat Darj Ho Gayi!*\n\n🔖 ID: *${code}*\n📊 Status: Zair-e-Ghour\n\nHum jald karyawai karein ge.\n\nNai shikayat ke liye *Hi* likhein.`,
+      `🎉 *شکایت درج ہو گئی!*\n\n🔖 ID: *${code}*\n📊 حیثیت: زیر غور\n\nہم جلد کارروائی کریں گے۔\n\nنئی شکایت کے لیے *Hi* لکھیں۔`,
 
     NEW_COMPLAINT_PROMPT:
-      `Aap ki shikayat jama ho gayi. Kya aap nai shikayat darj karna chahte hain?`,
+      `آپ کی شکایت جمع ہو گئی۔ کیا آپ نئی شکایت درج کرنا چاہتے ہیں؟`,
 
     GOODBYE:
-      `Shukriya! Zaroorat par dobara rabta karein.\n\nAllah Hafiz! 🙏`,
+      `شکریہ! ضرورت پر دوبارہ رابطہ کریں۔\n\nاللہ حافظ! 🙏`,
 
     ERROR:
-      `⚠️ Kuch ghalat hua. Baraye meherbani dobara koshish karein.\n\nDobara shuru karne ke liye *Hi* likhein.`,
+      `⚠️ کچھ غلط ہوا۔ براہ کرم دوبارہ کوشش کریں۔\n\nدوبارہ شروع کرنے کے لیے *Hi* لکھیں۔`,
 
-    SUBMIT_BTN:   'Jama Karain ✅',
-    EDIT_BTN:     'Tabdeel Karain ✏️',
-    SKIP_BTN:     'Aage Barho ⏭️',
-    YES_BTN:      'Haan ✅',
-    NO_BTN:       'Nahi ❌',
-    START_BTN:    'Nai Shikayat 🚀',
+    SUBMIT_BTN:   'جمع کریں ✅',
+    EDIT_BTN:     'تبدیل کریں ✏️',
+    SKIP_BTN:     'آگے بڑھیں ⏭️',
+    YES_BTN:      'ہاں ✅',
+    NO_BTN:       'نہیں ❌',
+    START_BTN:    'نئی شکایت 🚀',
     LANG_EN_BTN:  'English 🇬🇧',
     LANG_UR_BTN:  'اردو 🇵🇰'
   }
@@ -152,28 +152,39 @@ function maskCnic(cnic) {
 
 /**
  * Build review summary card
- * Resolves enum keys (pump, complaint_type) to human-readable labels
+ * Resolves enum keys (pump, complaint_type) to human-readable labels.
+ * All field labels switch to Urdu (Arabic script) when lang === 'ur'.
  */
 function buildReviewSummary(session) {
   const lang = session.lang || 'en';
+  const ur   = lang === 'ur';
 
+  const sep = ur ? '، ' : ', ';
   const loc = session.latitude
-    ? [session.area, session.city, session.province].filter(Boolean).join(', ') || 'Location pinned ✓'
+    ? [session.area, session.city, session.province].filter(Boolean).join(sep) || (ur ? 'لوکیشن محفوظ ✓' : 'Location pinned ✓')
     : '—';
 
-  const pumpLabel         = getPumpLabel(session.pump);
+  const pumpLabel          = getPumpLabel(session.pump);
   const complaintTypeLabel = getComplaintTypeTitle(session.complaint_type, lang);
+
+  const L = ur
+    ? { cnic: 'شناختی کارڈ', location: 'مقام', pump: 'پمپ',
+        landmark: 'قریبی نشان', type: 'نوعیت', details: 'تفصیل',
+        image: 'تصویر', attached: 'منسلک ✓', none: 'منسلک نہیں' }
+    : { cnic: 'CNIC', location: 'Location', pump: 'Pump',
+        landmark: 'Landmark', type: 'Type', details: 'Details',
+        image: 'Image', attached: 'Attached ✓', none: 'Not attached' };
 
   const lines = [
     S(session, 'REVIEW_HEADER'),
     '',
-    `🪪 *CNIC:* ${maskCnic(session.cnic)}`,
-    `📍 *Location:* ${loc}`,
-    `🏪 *Pump:* ${pumpLabel}`,
-    session.landmark ? `📌 *Landmark:* ${session.landmark}` : null,
-    `📝 *Type:* ${complaintTypeLabel}`,
-    `📄 *Details:* ${session.details || '—'}`,
-    `📷 *Image:* ${session.has_image ? 'Attached ✓' : (lang === 'ur' ? 'Nahi' : 'Not attached')}`
+    `🪪 *${L.cnic}:* ${maskCnic(session.cnic)}`,
+    `📍 *${L.location}:* ${loc}`,
+    `🏪 *${L.pump}:* ${pumpLabel}`,
+    session.landmark ? `📌 *${L.landmark}:* ${session.landmark}` : null,
+    `📝 *${L.type}:* ${complaintTypeLabel}`,
+    `📄 *${L.details}:* ${session.details || '—'}`,
+    `📷 *${L.image}:* ${session.has_image ? L.attached : L.none}`
   ].filter(l => l !== null);
 
   return lines.join('\n');
