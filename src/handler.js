@@ -9,17 +9,20 @@
 
 const axios = require('axios');
 
-const { STATES, PUMPS, isValidCnic, cleanCnic, isValidDetails,
-        generateComplaintCode, getPumpTitle, getComplaintTypeTitle,
-        getComplaintTypesForList, getEditFieldsForList } = require('./seed');
+const {
+  STATES, PUMP_SECTIONS, isValidCnic, cleanCnic, isValidDetails,
+  generateComplaintCode, getComplaintTypesForList, getEditFieldsForList,
+  normalizeProvince
+} = require('./seed');
 
 const { S, buildReviewSummary } = require('./strings');
 
-const { getSession, updateSession, resetSession,
-        saveComplaint } = require('./session');
+const { getSession, updateSession, resetSession, saveComplaint } = require('./session');
 
-const { sendTextMessage, sendButtonMessage, sendListMessage,
-        getUserInput, isStartTrigger } = require('./whatsapp');
+const {
+  sendTextMessage, sendButtonMessage, sendListMessage,
+  sendMultiSectionListMessage, getUserInput, isStartTrigger
+} = require('./whatsapp');
 
 // ---------------------------------------------------------------------------
 // Main entry
@@ -65,14 +68,12 @@ async function handleMessage(phoneNumber, message) {
 // ---------------------------------------------------------------------------
 
 async function onLanguage(phone, session, input) {
-  // First visit — send language selection
   if (!input.value) {
     await sendLanguagePrompt(phone, session);
     return;
   }
 
   const val = (input.value || '').toLowerCase();
-
   let lang = null;
   if (val === 'en' || val === 'english') lang = 'en';
   if (val === 'ur' || val === 'urdu' || val === 'اردو') lang = 'ur';
@@ -107,7 +108,6 @@ async function onLocation(phone, session, input) {
   if (input.type === 'location') {
     const { latitude, longitude } = input.value;
 
-    // Reverse geocode to get province / city / area
     const geo = await reverseGeocode(latitude, longitude);
 
     updateSession(phone, {
@@ -124,26 +124,27 @@ async function onLocation(phone, session, input) {
     return;
   }
 
-  // Text or anything else — ask again
   await sendTextMessage(phone, S(session, 'LOCATION_INVALID'));
 }
 
 async function onPump(phone, session, input) {
-  const pumpId = resolveListOrButton(input, PUMPS);
+  // Match against all pump ids across both sections
+  const allPumps = PUMP_SECTIONS.flatMap(s => s.items);
+  const pumpId   = resolveListOrButton(input, allPumps);
 
   if (!pumpId) {
     await sendPumpList(phone, session);
     return;
   }
 
-  updateSession(phone, { pump: getPumpTitle(pumpId), state: STATES.LANDMARK_INPUT });
+  // Store the enum key — used directly in the API payload
+  updateSession(phone, { pump: pumpId, state: STATES.LANDMARK_INPUT });
   await sendButtonMessage(phone, S(session, 'LANDMARK_PROMPT'), [
     { id: 'skip', title: S(session, 'SKIP_BTN') }
   ]);
 }
 
 async function onLandmark(phone, session, input) {
-  // Skip button or skip-text
   if (isSkip(input)) {
     updateSession(phone, { landmark: null, state: STATES.COMPLAINT_TYPE });
     await sendComplaintTypeList(phone, session);
@@ -156,14 +157,13 @@ async function onLandmark(phone, session, input) {
     return;
   }
 
-  // Re-prompt
   await sendButtonMessage(phone, S(session, 'LANDMARK_PROMPT'), [
     { id: 'skip', title: S(session, 'SKIP_BTN') }
   ]);
 }
 
 async function onComplaintType(phone, session, input) {
-  const types = getComplaintTypesForList(session.lang);
+  const types  = getComplaintTypesForList(session.lang);
   const typeId = resolveListOrButton(input, types);
 
   if (!typeId) {
@@ -171,8 +171,8 @@ async function onComplaintType(phone, session, input) {
     return;
   }
 
-  const label = getComplaintTypeTitle(typeId, session.lang);
-  updateSession(phone, { complaint_type: label, state: STATES.DETAILS_INPUT });
+  // Store the enum key — used directly in the API payload
+  updateSession(phone, { complaint_type: typeId, state: STATES.DETAILS_INPUT });
   await sendTextMessage(phone, S(session, 'DETAILS_PROMPT'));
 }
 
@@ -224,12 +224,11 @@ async function onReview(phone, session, input) {
     }
   }
 
-  // Re-send review
   await sendReview(phone, session);
 }
 
 async function onEditSelect(phone, session, input) {
-  const fields = getEditFieldsForList(session.lang);
+  const fields  = getEditFieldsForList(session.lang);
   const fieldId = resolveListOrButton(input, fields);
 
   if (!fieldId) {
@@ -268,15 +267,14 @@ async function onEditSelect(phone, session, input) {
 }
 
 async function onConfirmation(phone, session, input) {
-  // Any message after confirmation — prompt restart
-  await sendButtonMessage(phone, S(session, 'ERROR').replace('⚠️ ', '').split('.')[0] + '.',
-    [{ id: 'start', title: S(session, 'START_BTN') }]
-  );
-
   if (input.type === 'button' && input.value === 'start') {
     const fresh = resetSession(phone);
     await sendLanguagePrompt(phone, fresh);
+    return;
   }
+  await sendButtonMessage(phone, S(session, 'NEW_COMPLAINT_PROMPT'), [
+    { id: 'start', title: S(session, 'START_BTN') }
+  ]);
 }
 
 // ---------------------------------------------------------------------------
@@ -284,33 +282,51 @@ async function onConfirmation(phone, session, input) {
 // ---------------------------------------------------------------------------
 
 async function doSubmit(phone, session) {
-  const code = generateComplaintCode();
+  const code      = generateComplaintCode();
   const complaint = saveComplaint(session, code);
 
-  // Console log all collected info
+  // Build the API payload — matches the backend contract exactly
+  const payload = {
+    user: {
+      phoneNumber: session.phone,
+      cnic:        session.cnic
+    },
+    location: {
+      lat:             session.latitude,
+      lng:             session.longitude,
+      city:            session.city    || null,
+      province:        session.province || null,
+      nearestLandmark: session.landmark || null
+    },
+    complaint: {
+      type:        session.complaint_type,   // enum key e.g. "FUEL_QUALITY"
+      pumpBrand:   session.pump,             // enum key e.g. "PSO"
+      description: session.details,
+      images:      session.has_image ? [{ mediaId: session.image_id }] : []
+    },
+    complaintCode: code
+  };
+
   console.log('\n╔══════════════════════════════════════╗');
   console.log('║        COMPLAINT SUBMITTED           ║');
   console.log('╚══════════════════════════════════════╝');
-  console.log(JSON.stringify(complaint, null, 2));
+  console.log(JSON.stringify(payload, null, 2));
   console.log('═══════════════════════════════════════\n');
 
-  // Placeholder API call (fire-and-forget)
+  // Forward to external API (placeholder — set COMPLAINT_API_URL in .env)
   const apiUrl = process.env.COMPLAINT_API_URL;
   if (apiUrl) {
-    axios.post(apiUrl, complaint, { timeout: 5000 })
-      .then(() => console.log('Placeholder API: complaint sent'))
-      .catch(e => console.log('Placeholder API call skipped:', e.message));
+    axios.post(apiUrl, payload, { timeout: 5000 })
+      .then(() => console.log(`API: complaint ${code} sent`))
+      .catch(e => console.warn('API call skipped:', e.message));
   }
 
-  // Send confirmation to user
-  await sendTextMessage(phone, S(session, 'CONFIRM_MSG', code));
-
-  // Mark session as confirmed
   updateSession(phone, { state: STATES.CONFIRMATION });
+  await sendTextMessage(phone, S(session, 'CONFIRM_MSG', code));
 }
 
 // ---------------------------------------------------------------------------
-// Message helpers
+// Message senders
 // ---------------------------------------------------------------------------
 
 async function sendLanguagePrompt(phone, session) {
@@ -321,7 +337,13 @@ async function sendLanguagePrompt(phone, session) {
 }
 
 async function sendPumpList(phone, session) {
-  await sendListMessage(phone, S(session, 'PUMP_PROMPT'), 'Select Pump', PUMPS, 'Fuel Pumps');
+  const btn = session.lang === 'ur' ? 'Chunein' : 'Select Pump';
+  await sendMultiSectionListMessage(
+    phone,
+    S(session, 'PUMP_PROMPT'),
+    btn,
+    PUMP_SECTIONS
+  );
 }
 
 async function sendComplaintTypeList(phone, session) {
@@ -350,27 +372,20 @@ async function sendReview(phone, session) {
 // Utilities
 // ---------------------------------------------------------------------------
 
-/**
- * Match a list/button/text input against an array of {id, title} items
- * Returns matched id or null
- */
 function resolveListOrButton(input, items) {
   if (input.type === 'list' || input.type === 'button') {
     return items.find(i => i.id === input.value) ? input.value : null;
   }
   if (input.type === 'text') {
-    const text = input.value.toLowerCase().trim();
+    const text  = input.value.toLowerCase().trim();
     const match = items.find(i =>
-      i.id === text || i.title.toLowerCase() === text
+      i.id.toLowerCase() === text || i.title.toLowerCase() === text
     );
     return match ? match.id : null;
   }
   return null;
 }
 
-/**
- * Check if user input is a skip action
- */
 function isSkip(input) {
   if (input.type === 'button' && input.value === 'skip') return true;
   if (input.type === 'text') {
@@ -382,7 +397,7 @@ function isSkip(input) {
 
 /**
  * Reverse geocode lat/lng using OpenStreetMap Nominatim
- * Returns { province, city, area }
+ * Returns { province, city, area } with province normalised to API enum
  */
 async function reverseGeocode(lat, lon) {
   try {
@@ -395,7 +410,7 @@ async function reverseGeocode(lat, lon) {
     const a = resp.data?.address || {};
 
     return {
-      province: a.state || a.state_district || null,
+      province: normalizeProvince(a.state || a.state_district || null),
       city:     a.city || a.town || a.village || a.county || null,
       area:     a.suburb || a.neighbourhood || a.quarter || a.road || null
     };

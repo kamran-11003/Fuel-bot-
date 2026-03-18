@@ -62,7 +62,7 @@ async function sendButtonMessage(to, bodyText, buttons) {
 }
 
 /**
- * Send interactive list message (max 10 rows)
+ * Send interactive list message — single section (max 10 rows)
  */
 async function sendListMessage(to, bodyText, buttonText, items, sectionTitle = 'Options') {
   const { phoneNumberId } = cfg();
@@ -88,6 +88,37 @@ async function sendListMessage(to, bodyText, buttonText, items, sectionTitle = '
     }
   }, { headers: headers() }).catch(e =>
     console.error('sendListMessage error:', e.response?.data || e.message)
+  );
+}
+
+/**
+ * Send interactive list message — multiple sections
+ * @param {Array<{ title: string, items: Array<{ id, title, description? }> }>} sections
+ */
+async function sendMultiSectionListMessage(to, bodyText, buttonText, sections) {
+  const { phoneNumberId } = cfg();
+  await axios.post(`${WA_API}/${phoneNumberId}/messages`, {
+    messaging_product: 'whatsapp',
+    recipient_type:    'individual',
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: bodyText },
+      action: {
+        button: buttonText.slice(0, 20),
+        sections: sections.map(s => ({
+          title: s.title.slice(0, 24),
+          rows:  s.items.slice(0, 10).map(i => ({
+            id:          i.id,
+            title:       i.title.slice(0, 24),
+            description: (i.description || '').slice(0, 72)
+          }))
+        }))
+      }
+    }
+  }, { headers: headers() }).catch(e =>
+    console.error('sendMultiSectionListMessage error:', e.response?.data || e.message)
   );
 }
 
@@ -187,6 +218,7 @@ module.exports = {
   sendTextMessage,
   sendButtonMessage,
   sendListMessage,
+  sendMultiSectionListMessage,
   markAsRead,
   parseWebhookMessage,
   getUserInput,

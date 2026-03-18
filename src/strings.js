@@ -3,6 +3,8 @@
  * All bot copy lives here. Use S(session, 'KEY') to get language-aware string.
  */
 
+const { getPumpLabel, getComplaintTypeTitle } = require('./seed');
+
 const STRINGS = {
   en: {
     LANGUAGE_PROMPT:
@@ -15,7 +17,7 @@ const STRINGS = {
       `⚠️ Invalid CNIC. Please enter exactly *13 digits* without dashes.\n\n📌 Example: 3520212345678`,
 
     LOCATION_PROMPT:
-      `📍 Share the *fuel pump location*.\n\nIn WhatsApp:\n1. Tap the 📎 attachment icon\n2. Select *Location*\n3. Choose current or map location`,
+      `📍 Share the *fuel pump location*.\n\nIn WhatsApp:\n1. Tap the 📎 attachment icon\n2. Select *Location*\n3. Choose the pump location on the map`,
 
     LOCATION_INVALID:
       `⚠️ Location not received.\n\nPlease share a WhatsApp *location pin* (not a text address).`,
@@ -48,6 +50,9 @@ const STRINGS = {
     CONFIRM_MSG: (code) =>
       `🎉 *Complaint Registered!*\n\n🔖 ID: *${code}*\n📊 Status: Pending\n\nWe will act on your complaint shortly.\n\nType *Hi* to submit another complaint.`,
 
+    NEW_COMPLAINT_PROMPT:
+      `Your complaint has been submitted. Would you like to file a new complaint?`,
+
     GOODBYE:
       `Shukriya! Feel free to message anytime.\n\nAllah Hafiz! 🙏`,
 
@@ -59,7 +64,7 @@ const STRINGS = {
     SKIP_BTN:     'Skip ⏭️',
     YES_BTN:      'Yes ✅',
     NO_BTN:       'No ❌',
-    START_BTN:    'Start 🚀',
+    START_BTN:    'New Complaint 🚀',
     LANG_EN_BTN:  'English 🇬🇧',
     LANG_UR_BTN:  'اردو 🇵🇰'
   },
@@ -75,7 +80,7 @@ const STRINGS = {
       `⚠️ CNIC ghalat hai. Baraye meherbani *13 ank* darj karein bina dash ke.\n\n📌 Misaal: 3520212345678`,
 
     LOCATION_PROMPT:
-      `📍 Pump ki *location share* karein.\n\nWhatsApp mein:\n1. 📎 attachment icon dabaein\n2. *Location* chunein\n3. Current ya map location share karein`,
+      `📍 Pump ki *location share* karein.\n\nWhatsApp mein:\n1. 📎 attachment icon dabaein\n2. *Location* chunein\n3. Pump ki location map par share karein`,
 
     LOCATION_INVALID:
       `⚠️ Location nahi mili.\n\nBaraye meherbani WhatsApp *location pin* share karein (text address nahi).`,
@@ -108,6 +113,9 @@ const STRINGS = {
     CONFIRM_MSG: (code) =>
       `🎉 *Shikayat Darj Ho Gayi!*\n\n🔖 ID: *${code}*\n📊 Status: Zair-e-Ghour\n\nHum jald karyawai karein ge.\n\nNai shikayat ke liye *Hi* likhein.`,
 
+    NEW_COMPLAINT_PROMPT:
+      `Aap ki shikayat jama ho gayi. Kya aap nai shikayat darj karna chahte hain?`,
+
     GOODBYE:
       `Shukriya! Zaroorat par dobara rabta karein.\n\nAllah Hafiz! 🙏`,
 
@@ -119,7 +127,7 @@ const STRINGS = {
     SKIP_BTN:     'Aage Barho ⏭️',
     YES_BTN:      'Haan ✅',
     NO_BTN:       'Nahi ❌',
-    START_BTN:    'Shuru Karain 🚀',
+    START_BTN:    'Nai Shikayat 🚀',
     LANG_EN_BTN:  'English 🇬🇧',
     LANG_UR_BTN:  'اردو 🇵🇰'
   }
@@ -127,13 +135,10 @@ const STRINGS = {
 
 /**
  * Get a string in the session's language
- * @param {object} session
- * @param {string} key
- * @param {...any} args - passed to function-type strings
  */
 function S(session, key, ...args) {
   const lang = session?.lang || 'en';
-  const val = STRINGS[lang][key] ?? STRINGS.en[key];
+  const val  = STRINGS[lang][key] ?? STRINGS.en[key];
   return typeof val === 'function' ? val(...args) : (val ?? `[${key}]`);
 }
 
@@ -141,12 +146,13 @@ function S(session, key, ...args) {
  * Mask CNIC — show first 5 and last 3 digits
  */
 function maskCnic(cnic) {
-  if (!cnic || cnic.length !== 13) return cnic || '—';
+  if (!cnic || cnic.length < 8) return cnic || '—';
   return `${cnic.slice(0, 5)}*****${cnic.slice(-3)}`;
 }
 
 /**
- * Build a review summary card text
+ * Build review summary card
+ * Resolves enum keys (pump, complaint_type) to human-readable labels
  */
 function buildReviewSummary(session) {
   const lang = session.lang || 'en';
@@ -155,14 +161,17 @@ function buildReviewSummary(session) {
     ? [session.area, session.city, session.province].filter(Boolean).join(', ') || 'Location pinned ✓'
     : '—';
 
+  const pumpLabel         = getPumpLabel(session.pump);
+  const complaintTypeLabel = getComplaintTypeTitle(session.complaint_type, lang);
+
   const lines = [
     S(session, 'REVIEW_HEADER'),
     '',
     `🪪 *CNIC:* ${maskCnic(session.cnic)}`,
     `📍 *Location:* ${loc}`,
-    `🏪 *Pump:* ${session.pump || '—'}`,
+    `🏪 *Pump:* ${pumpLabel}`,
     session.landmark ? `📌 *Landmark:* ${session.landmark}` : null,
-    `📝 *Type:* ${session.complaint_type || '—'}`,
+    `📝 *Type:* ${complaintTypeLabel}`,
     `📄 *Details:* ${session.details || '—'}`,
     `📷 *Image:* ${session.has_image ? 'Attached ✓' : (lang === 'ur' ? 'Nahi' : 'Not attached')}`
   ].filter(l => l !== null);
