@@ -81,7 +81,7 @@ const STRINGS = {
       `🪪 Enter your *CNIC number* to check complaint status.\n\n📌 Example: 3520212345678`,
 
     STATUS_RESULT: (data) =>
-      `📋 *Complaint Status*\n\n🔖 ID: *${data.complaintCode || data.id || '—'}*\n📊 Status: *${data.status || '—'}*\n📝 Type: ${data.type || data.complaint_type || '—'}\n📅 Date: ${data.date || data.created_at || '—'}\n\nType *Hi* to go back.`,
+      `📋 *Complaint Status*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 Status: *${data.status || '—'}*\n📝 Type: ${data.complaint_type || data.type || '—'}\n\nType *Hi* to go back.`,
 
     STATUS_NOT_FOUND:
       `❌ No complaint found for the given phone number and CNIC.\n\nType *Hi* to try again.`,
@@ -177,7 +177,7 @@ const STRINGS = {
       `🪪 شکایت کی حیثیت چیک کرنے کے لیے اپنا *شناختی کارڈ نمبر* درج کریں۔\n\n📌 مثال: 3520212345678`,
 
     STATUS_RESULT: (data) =>
-      `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaintCode || data.id || '—'}*\n📊 حیثیت: *${data.status || '—'}*\n📝 نوعیت: ${data.type || data.complaint_type || '—'}\n📅 تاریخ: ${data.date || data.created_at || '—'}\n\nواپس جانے کے لیے *Hi* لکھیں۔`,
+      `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 حیثیت: *${data.status || '—'}*\n📝 نوعیت: ${data.complaint_type || data.type || '—'}\n\nواپس جانے کے لیے *Hi* لکھیں۔`,
 
     STATUS_NOT_FOUND:
       `❌ دیئے گئے فون نمبر اور شناختی کارڈ سے کوئی شکایت نہیں ملی۔\n\nدوبارہ کوشش کے لیے *Hi* لکھیں۔`,
