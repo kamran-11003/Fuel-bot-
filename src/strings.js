@@ -27,7 +27,10 @@ const STRINGS = {
     PUMP_PROMPT: `Select the *fuel pump brand*:`,
 
     LANDMARK_PROMPT:
-      `📌 Enter the *nearest landmark* to the pump (optional).\n\nExample: Near Barkat Market, Lahore\n\nOr tap Skip to continue.`,
+      `📌 Enter the *nearest landmark* to the pump.\n\nExample: Near Barkat Market, Lahore`,
+
+    LANDMARK_REQUIRED:
+      `⚠️ Nearest landmark is required. Please enter the nearest landmark to the pump.`,
 
     COMPLAINT_TYPE_PROMPT: `Select the *type of complaint*:`,
 
@@ -38,7 +41,10 @@ const STRINGS = {
       `⚠️ Please write more detail (at least 10 characters).`,
 
     IMAGE_PROMPT:
-      `📷 Upload an image as evidence (optional).\n\nOr tap Skip to continue.`,
+      `📷 Upload an image as evidence.\n\nPlease send a photo of the pump, receipt, or issue.`,
+
+    IMAGE_REQUIRED:
+      `⚠️ Image is required to file a complaint. Please send a photo.`,
 
     IMAGE_RECEIVED: `✅ Image received!`,
 
@@ -58,6 +64,33 @@ const STRINGS = {
 
     ERROR:
       `⚠️ Something went wrong. Please try again.\n\nType *Hi* to restart.`,
+
+    MAIN_MENU_PROMPT:
+      `What would you like to do?`,
+
+    NEW_COMPLAINT_BTN: 'New Complaint 📝',
+    CHECK_STATUS_BTN:  'Check Status 🔍',
+
+    STATUS_PHONE_PROMPT:
+      `📱 Enter your *phone number* (with country code).\n\n📌 Example: 923001234567`,
+
+    STATUS_PHONE_INVALID:
+      `⚠️ Invalid phone number. Please enter 10–12 digits.\n\n📌 Example: 923001234567`,
+
+    STATUS_CNIC_PROMPT:
+      `🪪 Enter your *CNIC number* to check complaint status.\n\n📌 Example: 3520212345678`,
+
+    STATUS_RESULT: (data) =>
+      `📋 *Complaint Status*\n\n🔖 ID: *${data.complaintCode || data.id || '—'}*\n📊 Status: *${data.status || '—'}*\n📝 Type: ${data.type || data.complaint_type || '—'}\n📅 Date: ${data.date || data.created_at || '—'}\n\nType *Hi* to go back.`,
+
+    STATUS_NOT_FOUND:
+      `❌ No complaint found for the given phone number and CNIC.\n\nType *Hi* to try again.`,
+
+    STATUS_ERROR:
+      `⚠️ Unable to check status right now. Please try again later.\n\nType *Hi* to restart.`,
+
+    IMAGE_DOWNLOAD_FAILED:
+      `⚠️ We could not process your image. Please send the photo again.`,
 
     SUBMIT_BTN:   'Submit ✅',
     EDIT_BTN:     'Edit ✏️',
@@ -90,7 +123,10 @@ const STRINGS = {
     PUMP_PROMPT: `*فیول پمپ* کا نام منتخب کریں:`,
 
     LANDMARK_PROMPT:
-      `📌 پمپ کے *قریبی نشان* درج کریں (اختیاری)۔\n\nمثال: بارکت مارکیٹ کے قریب، لاہور\n\nیا آگے بڑھیں۔`,
+      `📌 پمپ کے *قریبی نشان* درج کریں۔\n\nمثال: بارکت مارکیٹ کے قریب، لاہور`,
+
+    LANDMARK_REQUIRED:
+      `⚠️ قریبی نشان ضروری ہے۔ براہ کرم پمپ کے قریب ترین نشان درج کریں۔`,
 
     COMPLAINT_TYPE_PROMPT: `*شکایت کی نوعیت* منتخب کریں:`,
 
@@ -101,7 +137,10 @@ const STRINGS = {
       `⚠️ تھوڑی اور تفصیل درج کریں (کم از کم ۱۰ حروف)۔`,
 
     IMAGE_PROMPT:
-      `📷 ثبوت کے طور پر تصویر اپلوڈ کریں (اختیاری)۔\n\nیا آگے بڑھیں۔`,
+      `📷 ثبوت کے طور پر تصویر اپلوڈ کریں۔\n\nبراہ کرم پمپ، رسید، یا مسئلے کی تصویر بھیجیں۔`,
+
+    IMAGE_REQUIRED:
+      `⚠️ شکایت درج کرنے کے لیے تصویر ضروری ہے۔ براہ کرم تصویر بھیجیں۔`,
 
     IMAGE_RECEIVED: `✅ تصویر موصول ہو گئی!`,
 
@@ -121,6 +160,33 @@ const STRINGS = {
 
     ERROR:
       `⚠️ کچھ غلط ہوا۔ براہ کرم دوبارہ کوشش کریں۔\n\nدوبارہ شروع کرنے کے لیے *Hi* لکھیں۔`,
+
+    MAIN_MENU_PROMPT:
+      `آپ کیا کرنا چاہتے ہیں؟`,
+
+    NEW_COMPLAINT_BTN: 'نئی شکایت 📝',
+    CHECK_STATUS_BTN:  'حیثیت چیک کریں 🔍',
+
+    STATUS_PHONE_PROMPT:
+      `📱 اپنا *فون نمبر* درج کریں (ملکی کوڈ کے ساتھ)۔\n\n📌 مثال: 923001234567`,
+
+    STATUS_PHONE_INVALID:
+      `⚠️ فون نمبر غلط ہے۔ براہ کرم ۱۰ سے ۱۲ ہندسے درج کریں۔\n\n📌 مثال: 923001234567`,
+
+    STATUS_CNIC_PROMPT:
+      `🪪 شکایت کی حیثیت چیک کرنے کے لیے اپنا *شناختی کارڈ نمبر* درج کریں۔\n\n📌 مثال: 3520212345678`,
+
+    STATUS_RESULT: (data) =>
+      `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaintCode || data.id || '—'}*\n📊 حیثیت: *${data.status || '—'}*\n📝 نوعیت: ${data.type || data.complaint_type || '—'}\n📅 تاریخ: ${data.date || data.created_at || '—'}\n\nواپس جانے کے لیے *Hi* لکھیں۔`,
+
+    STATUS_NOT_FOUND:
+      `❌ دیئے گئے فون نمبر اور شناختی کارڈ سے کوئی شکایت نہیں ملی۔\n\nدوبارہ کوشش کے لیے *Hi* لکھیں۔`,
+
+    STATUS_ERROR:
+      `⚠️ ابھی حیثیت چیک نہیں ہو سکتی۔ براہ کرم بعد میں کوشش کریں۔\n\nدوبارہ شروع کے لیے *Hi* لکھیں۔`,
+
+    IMAGE_DOWNLOAD_FAILED:
+      `⚠️ آپ کی تصویر پراسیس نہیں ہو سکی۔ براہ کرم دوبارہ تصویر بھیجیں۔`,
 
     SUBMIT_BTN:   'جمع کریں ✅',
     EDIT_BTN:     'تبدیل کریں ✏️',

@@ -28,6 +28,9 @@ function freshSession(phone) {
     details: null,
     has_image: false,
     image_id: null,
+    image_mime: null,
+    status_phone: null,
+    status_cnic: null,
     created_at: new Date().toISOString()
   };
 }

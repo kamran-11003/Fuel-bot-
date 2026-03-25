@@ -16,10 +16,25 @@ The WhatsApp bot collects complaint data from citizens and POSTs a single JSON o
 
 ```
 POST {COMPLAINT_API_URL}
-Content-Type: application/json
+Content-Type: multipart/form-data  (when image is attached)
+Content-Type: application/json     (fallback — no image)
 ```
 
 The URL is configured via the `COMPLAINT_API_URL` environment variable on the bot server.
+
+### Multipart/Form-Data Fields (with image)
+
+When the user uploads an image, the bot downloads the actual file from Meta's WhatsApp Cloud API and sends it as `multipart/form-data`:
+
+| Field          | Type     | Description                                   |
+|----------------|----------|-----------------------------------------------|
+| `image`        | File     | The image file (JPEG or PNG, max 5 MB)       |
+| `user`         | String   | JSON-encoded `user` object                    |
+| `location`     | String   | JSON-encoded `location` object                |
+| `complaint`    | String   | JSON-encoded `complaint` object               |
+| `complaintCode`| String   | Bot-generated reference code (e.g. `FC-42891`)|
+
+Each JSON field should be parsed by the backend from the form-data string value.
 
 ---
 
@@ -69,7 +84,7 @@ The URL is configured via the `COMPLAINT_API_URL` environment variable on the bo
 | `lng`             | Number | Yes      | `-180.0` to `180.0`                                                                        | GPS longitude of the fuel pump   |
 | `city`            | String | Yes*     | Max 100 chars. May be `null` if geocoding failed.                                          | City / town name                 |
 | `province`        | String | Yes*     | **Enum** — see Province Enum below. May be `null` if geocoding failed.                    | Province or territory            |
-| `nearestLandmark` | String | Optional | Max 255 chars. `null` if not provided.                                                     | User-provided nearby landmark    |
+| `nearestLandmark` | String | Yes      | Max 255 chars. Required field.                                                             | User-provided nearby landmark    |
 
 > `*` — `city` and `province` are auto-derived from GPS coordinates via OpenStreetMap Nominatim. Treat `null` gracefully if reverse geocoding failed.
 
@@ -94,7 +109,7 @@ The URL is configured via the `COMPLAINT_API_URL` environment variable on the bo
 | `type`        | String | Yes      | **Enum** — see Complaint Type Enum below            | Category of the complaint            |
 | `pumpBrand`   | String | Yes      | **Enum** — see Pump Brand Enum below                | Fuel pump brand being complained about |
 | `description` | String | Yes      | Min 10 chars, max 1000 chars                        | Free-text complaint details          |
-| `images`      | Array  | Optional | Array of `{ mediaId: String }`. Empty array `[]` if no image. | Evidence photos from WhatsApp |
+| `images`      | Array/File | Yes   | When using multipart/form-data, the image is sent as a file field. When using JSON, array of `{ mediaId: String }`. | Evidence photo (required)        |
 
 ### Complaint Type Enum
 
@@ -120,7 +135,7 @@ The URL is configured via the `COMPLAINT_API_URL` environment variable on the bo
 | `GO`        | Gas & Oil Pakistan (GO)          |
 | `APL`       | Attock Petroleum (APL)           |
 | `BYCO`      | Byco Petroleum                   |
-| `PARCO`     | Pak-Arab Refinery (PARCO)        |
+| `ARAMCO`    | Saudi Arabian Oil Company (ARAMCO) |
 | `EURO_OIL`  | Euro Oil                         |
 | `OILMAN`    | Oilman Pakistan                  |
 | `PEARL`     | Pearl Energy                     |
@@ -233,7 +248,50 @@ If not set, the bot still works — the payload is printed to the server console
 
 ## Notes
 
-- The bot sends this payload as a fire-and-forget POST (5-second timeout).
+- When an image is attached, the bot downloads the actual image from Meta's WhatsApp Cloud API, validates it (MIME type, magic bytes, size ≤ 5 MB), and sends it as `multipart/form-data`.
 - The bot does not retry on failure — it is the backend's responsibility to acknowledge and queue.
-- `mediaId` values are WhatsApp media IDs. Your backend must call the WhatsApp Cloud API to download the actual image bytes.
 - All enum values are **uppercase with underscores** — match exactly (case-sensitive).
+- Image is now **required** — complaints cannot be submitted without a photo.
+- Nearest landmark is now **required**.
+
+---
+
+## Status Check API
+
+### Endpoint
+
+```
+GET {STATUS_API_URL}?phoneNumber=923001234567&cnic=3520212345678
+```
+
+The URL is configured via the `STATUS_API_URL` environment variable.
+
+### Expected Response
+
+```json
+{
+  "complaint": {
+    "complaintCode": "FC-42891",
+    "status": "pending",
+    "type": "FUEL_QUALITY",
+    "created_at": "2025-03-15T10:30:00Z"
+  }
+}
+```
+
+Or for multiple complaints:
+
+```json
+{
+  "complaints": [
+    {
+      "complaintCode": "FC-42891",
+      "status": "pending",
+      "type": "FUEL_QUALITY",
+      "created_at": "2025-03-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+The bot will display the first complaint's status to the user.

@@ -4,17 +4,20 @@
  */
 
 const STATES = {
-  LANGUAGE:       'LANGUAGE',
-  CNIC_INPUT:     'CNIC_INPUT',
-  LOCATION_INPUT: 'LOCATION_INPUT',
-  PUMP_SELECTION: 'PUMP_SELECTION',
-  LANDMARK_INPUT: 'LANDMARK_INPUT',
-  COMPLAINT_TYPE: 'COMPLAINT_TYPE',
-  DETAILS_INPUT:  'DETAILS_INPUT',
-  IMAGE_UPLOAD:   'IMAGE_UPLOAD',
-  REVIEW:         'REVIEW',
-  EDIT_SELECT:    'EDIT_SELECT',
-  CONFIRMATION:   'CONFIRMATION'
+  LANGUAGE:           'LANGUAGE',
+  MAIN_MENU:          'MAIN_MENU',
+  CNIC_INPUT:         'CNIC_INPUT',
+  LOCATION_INPUT:     'LOCATION_INPUT',
+  PUMP_SELECTION:     'PUMP_SELECTION',
+  LANDMARK_INPUT:     'LANDMARK_INPUT',
+  COMPLAINT_TYPE:     'COMPLAINT_TYPE',
+  DETAILS_INPUT:      'DETAILS_INPUT',
+  IMAGE_UPLOAD:       'IMAGE_UPLOAD',
+  REVIEW:             'REVIEW',
+  EDIT_SELECT:        'EDIT_SELECT',
+  CONFIRMATION:       'CONFIRMATION',
+  STATUS_PHONE_INPUT: 'STATUS_PHONE_INPUT',
+  STATUS_CNIC_INPUT:  'STATUS_CNIC_INPUT'
 };
 
 // ---------------------------------------------------------------------------
@@ -31,7 +34,7 @@ const PUMPS = [
   { id: 'GO',       title: 'GO Pakistan',        label: 'Gas & Oil Pakistan (GO)' },
   { id: 'APL',      title: 'Attock (APL)',        label: 'Attock Petroleum (APL)' },
   { id: 'BYCO',     title: 'Byco Petroleum',     label: 'Byco Petroleum' },
-  { id: 'PARCO',    title: 'PARCO',              label: 'Pak-Arab Refinery (PARCO)' },
+  { id: 'ARAMCO',   title: 'Saudi ARAMCO',       label: 'Saudi Arabian Oil Company (ARAMCO)' },
   { id: 'EURO_OIL', title: 'Euro Oil',           label: 'Euro Oil' },
   { id: 'OTHER',    title: 'Other / Unknown',    label: 'Other / Unknown' }
 ];
@@ -119,6 +122,28 @@ function isValidDetails(val) {
   return val && val.trim().length >= 10;
 }
 
+function isValidPhone(val) {
+  const digits = (val || '').replace(/\D/g, '');
+  return /^\d{10,12}$/.test(digits);
+}
+
+function cleanPhone(val) {
+  return (val || '').replace(/\D/g, '');
+}
+
+/**
+ * Strip HTML tags, control characters, and enforce max length.
+ * Used on all free-text user inputs before storage.
+ */
+function sanitizeText(val, maxLen = 1000) {
+  if (!val) return '';
+  return val
+    .replace(/<[^>]*>/g, '')           // strip HTML tags
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // strip control chars (keep \n, \r, \t)
+    .trim()
+    .slice(0, maxLen);
+}
+
 function generateComplaintCode() {
   const num = Math.floor(10000 + Math.random() * 90000);
   return `FC-${num}`;
@@ -163,6 +188,9 @@ module.exports = {
   isValidCnic,
   cleanCnic,
   isValidDetails,
+  isValidPhone,
+  cleanPhone,
+  sanitizeText,
   generateComplaintCode,
   getPumpLabel,
   getPumpTitle,
