@@ -32,6 +32,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 // Whitelisted Meta CDN domains for SSRF prevention
 const ALLOWED_DOMAINS = [
   'lookaside.fbcdn.net',
+  'lookaside.fbsbx.com',
   'scontent.whatsapp.net',
   'media.fna.whatsapp.net',
   'media.fba.whatsapp.net',
