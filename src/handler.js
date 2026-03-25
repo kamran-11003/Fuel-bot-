@@ -24,7 +24,7 @@ const {
 
 const { S, buildReviewSummary } = require('./strings');
 
-const { getSession, updateSession, resetSession, saveComplaint } = require('./session');
+const { getSession, updateSession, resetSession, saveComplaint, findComplaintsByPhoneAndCnic } = require('./session');
 
 const {
   sendTextMessage, sendButtonMessage, sendListMessage,
@@ -322,36 +322,34 @@ async function onStatusCnic(phone, session, input) {
 
   updateSession(phone, { status_cnic: cnic });
 
-  const statusUrl = process.env.STATUS_API_URL;
-  if (!statusUrl) {
-    await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
-    updateSession(phone, { state: STATES.MAIN_MENU });
-    await sendMainMenu(phone, session);
-    return;
-  }
+  // Look up complaints locally (in-memory store)
+  const matches = findComplaintsByPhoneAndCnic(session.status_phone, cnic);
 
-  try {
-    const resp = await axios.get(statusUrl, {
-      params: { phoneNumber: session.status_phone, cnic },
-      timeout: 8000
-    });
-
-    const data = resp.data;
-
-    // Handle both single object and array response formats
-    const complaint = data?.complaint || data?.complaints?.[0] || data;
-
-    if (!complaint || (!complaint.status && !complaint.complaintCode && !complaint.id)) {
-      await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+  if (matches.length > 0) {
+    const latest = matches[matches.length - 1];
+    await sendTextMessage(phone, S(session, 'STATUS_RESULT', latest));
+  } else {
+    // If an external STATUS_API_URL is configured, try that as fallback
+    const statusUrl = process.env.STATUS_API_URL;
+    if (statusUrl) {
+      try {
+        const resp = await axios.get(statusUrl, {
+          params: { phoneNumber: session.status_phone, cnic },
+          timeout: 8000
+        });
+        const data = resp.data;
+        const complaint = data?.complaint || data?.complaints?.[0] || data;
+        if (complaint && (complaint.status || complaint.complaintCode || complaint.id)) {
+          await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
+        } else {
+          await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+        }
+      } catch (e) {
+        console.error('Status API error:', e.message);
+        await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+      }
     } else {
-      await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
-    }
-  } catch (e) {
-    console.error('Status API error:', e.message);
-    if (e.response?.status === 404) {
       await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
-    } else {
-      await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
     }
   }
 

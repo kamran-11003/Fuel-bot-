@@ -82,4 +82,8 @@ function getComplaints() {
   return [...complaints].reverse();
 }
 
-module.exports = { getSession, updateSession, resetSession, saveComplaint, getComplaints };
+function findComplaintsByPhoneAndCnic(phone, cnic) {
+  return complaints.filter(c => c.phone === phone && c.cnic === cnic);
+}
+
+module.exports = { getSession, updateSession, resetSession, saveComplaint, getComplaints, findComplaintsByPhoneAndCnic };
