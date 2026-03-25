@@ -964,8 +964,11 @@
       ? `<a class="location-chip" href="https://maps.google.com/?q=${complaint.latitude},${complaint.longitude}" target="_blank">📍 View on Google Maps</a>`
       : '';
 
-    const imageHtml = complaint.has_image
-      ? `<div class="no-image" style="color:var(--green-dark)">📷 Image attached (WhatsApp media ID: ${complaint.image_id || 'N/A'})</div>`
+    const imageHtml = complaint.has_image && complaint.image_id
+      ? `<img class="complaint-image" src="/api/media/${encodeURIComponent(complaint.image_id)}" alt="Complaint evidence" onerror="this.outerHTML='<div class=\\'no-image\\'>📷 Image could not be loaded</div>'">
+         <div style="margin-top:8px">
+           <a href="/api/media/${encodeURIComponent(complaint.image_id)}" download="complaint-${escHtml(complaint.complaint_code || complaint.id)}.jpg" style="display:inline-flex;align-items:center;gap:6px;background:var(--green-dark);color:white;padding:7px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none">⬇ Download Image</a>
+         </div>`
       : `<div class="no-image">📷 No image attached</div>`;
 
     document.getElementById('modalBody').innerHTML = `

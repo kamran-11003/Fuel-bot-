@@ -11,6 +11,7 @@ const path    = require('path');
 const { parseWebhookMessage, markAsRead } = require('./src/whatsapp');
 const { handleMessage }                   = require('./src/handler');
 const { getComplaints }                   = require('./src/session');
+const { getMediaUrl, downloadMedia }       = require('./src/media');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -93,6 +94,33 @@ app.patch('/api/complaints/:code/status', (req, res) => {
 // Bot phone number for the landing page link
 app.get('/api/bot-info', (req, res) => {
   res.json({ phoneNumber: process.env.WHATSAPP_DISPLAY_NUMBER || null });
+});
+
+// Image proxy — securely fetch WhatsApp media and serve to dashboard
+app.get('/api/media/:mediaId', async (req, res) => {
+  const mediaId = req.params.mediaId;
+
+  // Validate media ID format (numeric string)
+  if (!/^\d+$/.test(mediaId)) {
+    return res.status(400).json({ success: false, error: 'Invalid media ID' });
+  }
+
+  try {
+    const media = await getMediaUrl(mediaId);
+    const { buffer, contentType } = await downloadMedia(media.url);
+    const mime = media.mimeType || contentType || 'image/jpeg';
+
+    res.set({
+      'Content-Type': mime,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'private, max-age=3600',
+      'Content-Disposition': `inline; filename="complaint-${mediaId}.jpg"`
+    });
+    res.send(buffer);
+  } catch (err) {
+    console.error('Media proxy error:', err.message);
+    res.status(502).json({ success: false, error: 'Could not fetch image' });
+  }
 });
 
 app.get('/health', (_, res) => res.json({ status: 'ok', uptime: process.uptime() }));
