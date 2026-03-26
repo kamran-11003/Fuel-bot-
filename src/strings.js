@@ -53,14 +53,28 @@ const STRINGS = {
 
     EDIT_PROMPT: `What would you like to edit?`,
 
-    CONFIRM_MSG: (code) =>
-      `✅ *Complaint Received!*\n\n🔖 Reference: *${code}*\n\nYour complaint is being submitted to the portal. You will receive a confirmation shortly.`,
+    CONFIRM_MSG: () =>
+      `⏳ *Submitting your complaint...*
+
+Please wait while we register your complaint on the portal.`,
 
     NITB_SUCCESS_MSG: (id) =>
-      `🎉 *Complaint Confirmed on Portal!*\n\n✅ Your complaint has been officially registered.\n🔖 Official ID: *${id}*\n\nWe will take action shortly.`,
+      `✅ *Complaint Registered!*
 
-    NITB_FAIL_MSG: (code) =>
-      `⚠️ *Portal Temporarily Unavailable*\n\nWe could not submit your complaint to the portal right now.\n🔖 Your local reference: *${code}*\n\nPlease try again after some time. We apologize for the inconvenience.`,
+🔖 Official ID: *${id}*
+
+Your complaint has been submitted to the portal and will be acted upon shortly.
+
+Type *Hi* to continue.`,
+
+    NITB_FAIL_MSG: () =>
+      `⚠️ *Submission Failed*
+
+We could not submit your complaint to the portal right now due to a server issue. We apologize for the inconvenience.
+
+Please try again after some time.
+
+Type *Hi* to continue.`,
 
     NEW_COMPLAINT_PROMPT:
       `Your complaint has been submitted. Would you like to file a new complaint?`,
@@ -156,14 +170,28 @@ const STRINGS = {
 
     EDIT_PROMPT: `آپ کیا تبدیل کرنا چاہتے ہیں؟`,
 
-    CONFIRM_MSG: (code) =>
-      `✅ *شکایت موصول ہو گئی!*\n\n🔖 حوالہ نمبر: *${code}*\n\nآپ کی شکایت پورٹل پر بھیجی جا رہی ہے۔ جلد ہی تصدیق موصول ہوگی۔`,
+    CONFIRM_MSG: () =>
+      `⏳ *شکایت جمع ہو رہی ہے...*
+
+براہ کرم انتظار کریں، ہم آپ کی شکایت پورٹل پر درج کر رہے ہیں۔`,
 
     NITB_SUCCESS_MSG: (id) =>
-      `🎉 *شکایت پورٹل پر تصدیق ہو گئی!*\n\n✅ آپ کی شکایت سرکاری طور پر درج ہو گئی۔\n🔖 سرکاری ID: *${id}*\n\nہم جلد کارروائی کریں گے۔`,
+      `✅ *شکایت درج ہو گئی!*
 
-    NITB_FAIL_MSG: (code) =>
-      `⚠️ *پورٹل عارضی طور پر دستیاب نہیں*\n\nابھی آپ کی شکایت پورٹل پر جمع نہیں ہو سکی۔\n🔖 آپ کا مقامی حوالہ: *${code}*\n\nکچھ دیر بعد دوبارہ کوشش کریں۔ معذرت خواہ ہیں۔`,
+🔖 سرکاری ID: *${id}*
+
+آپ کی شکایت پورٹل پر کامیابی سے جمع ہو گئی اور جلد کارروائی کی جائے گی۔
+
+جاری رکھنے کے لیے *Hi* لکھیں۔`,
+
+    NITB_FAIL_MSG: () =>
+      `⚠️ *جمع کرنا ناکام رہا*
+
+سرور کے مسئلے کی وجہ سے ابھی شکایت پورٹل پر جمع نہیں ہو سکی۔ ہمیں افسوس ہے۔
+
+براہ کرم کچھ دیر بعد دوبارہ کوشش کریں۔
+
+جاری رکھنے کے لیے *Hi* لکھیں۔`,
 
     NEW_COMPLAINT_PROMPT:
       `آپ کی شکایت جمع ہو گئی۔ کیا آپ نئی شکایت درج کرنا چاہتے ہیں؟`,

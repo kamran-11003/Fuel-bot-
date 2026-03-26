@@ -456,7 +456,7 @@ async function doSubmit(phone, session) {
       const complaintCode = generateComplaintCode();
       saveComplaint(session, complaintCode);
       updateSession(phone, { state: STATES.CONFIRMATION });
-      await sendTextMessage(phone, S(session, 'CONFIRM_MSG', complaintCode));
+      await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
       console.log(`ℹ️  Local complaint code assigned: ${complaintCode}`);
 
       // Fire-and-forget: submit to NITB API without blocking the user
@@ -508,7 +508,7 @@ async function doSubmit(phone, session) {
             if ((resp.status === 200 || resp.status === 201) && nitbId) {
               await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_SUCCESS_MSG', nitbId));
             } else if (resp.status >= 400) {
-              await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG', complaintCode));
+              await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG'));
             }
           } catch (e) {
             console.error('\n❌ COMPLAINT API ERROR [background]');
@@ -518,7 +518,7 @@ async function doSubmit(phone, session) {
               console.error(`   Status: ${e.response.status}`);
               console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
             }
-            await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG', complaintCode));
+            await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG'));
           }
         });
       }
@@ -594,7 +594,7 @@ async function doSubmit(phone, session) {
 
   saveComplaint(session, complaintCode);
   updateSession(phone, { state: STATES.CONFIRMATION });
-  await sendTextMessage(phone, S(session, 'CONFIRM_MSG', complaintCode));
+  await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
 }
 
 // ---------------------------------------------------------------------------
