@@ -166,9 +166,10 @@ function cleanupTempFile(filePath) {
 function buildFormData(filePath, mimeType, payload) {
   const form = new FormData();
 
-  // Attach the image file
+  // Attach the image file as a Buffer (avoids DelayedStream issues with axios)
   const filename = path.basename(filePath);
-  form.append('image', fs.createReadStream(filePath), {
+  const fileBuffer = fs.readFileSync(filePath);
+  form.append('image', fileBuffer, {
     filename,
     contentType: mimeType
   });
