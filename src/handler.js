@@ -36,6 +36,14 @@ const {
   saveTempFile, cleanupTempFile, buildFormData
 } = require('./media');
 
+// Browser-like headers required to bypass WAF in front of icta.nitb.gov.pk
+const NITB_HEADERS = {
+  'Accept':      'application/json',
+  'User-Agent':  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Origin':      'https://icta.nitb.gov.pk',
+  'Referer':     'https://icta.nitb.gov.pk/'
+};
+
 // ---------------------------------------------------------------------------
 // Main entry
 // ---------------------------------------------------------------------------
@@ -342,7 +350,7 @@ async function onStatusCnic(phone, session, input) {
         const startTime = Date.now();
         const resp = await axios.get(statusUrl, {
           params: { phone: session.status_phone, cnic },
-          headers: { 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
+          headers: { ...NITB_HEADERS, 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
           timeout: 8000,
           validateStatus: () => true // Don't throw on any status
         });
@@ -477,7 +485,7 @@ async function doSubmit(phone, session) {
 
             const startTime = Date.now();
             const resp = await axios.post(apiUrl, form, {
-              headers: { ...form.getHeaders(), 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
+              headers: { ...form.getHeaders(), ...NITB_HEADERS, 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
               timeout: 60000,
               maxContentLength: 10 * 1024 * 1024,
               validateStatus: () => true
@@ -531,7 +539,7 @@ async function doSubmit(phone, session) {
       const startTime = Date.now();
       const resp = await axios.post(apiUrl, payload, {
         timeout: 8000,
-        headers: { 'Content-Type': 'application/json', 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
+        headers: { 'Content-Type': 'application/json', ...NITB_HEADERS, 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
         validateStatus: () => true
       });
       const duration = Date.now() - startTime;
