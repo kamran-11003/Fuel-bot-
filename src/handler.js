@@ -110,8 +110,14 @@ async function onMainMenu(phone, session, input) {
       return;
     }
     if (input.value === 'check_status') {
-      updateSession(phone, { state: STATES.STATUS_PHONE_INPUT });
-      await sendTextMessage(phone, S(session, 'STATUS_PHONE_PROMPT'));
+      // Use the caller's own WhatsApp number — no need to ask for it
+      updateSession(phone, { status_phone: phone, state: STATES.STATUS_CNIC_INPUT });
+      await sendTextMessage(phone, S(session, 'STATUS_CNIC_PROMPT'));
+      return;
+    }
+    if (input.value === 'change_language') {
+      updateSession(phone, { state: STATES.LANGUAGE });
+      await sendLanguagePrompt(phone, session);
       return;
     }
   }
@@ -580,8 +586,9 @@ async function sendLanguagePrompt(phone, session) {
 
 async function sendMainMenu(phone, session) {
   await sendButtonMessage(phone, S(session, 'MAIN_MENU_PROMPT'), [
-    { id: 'new_complaint', title: S(session, 'NEW_COMPLAINT_BTN') },
-    { id: 'check_status',  title: S(session, 'CHECK_STATUS_BTN') }
+    { id: 'new_complaint',   title: S(session, 'NEW_COMPLAINT_BTN') },
+    { id: 'check_status',    title: S(session, 'CHECK_STATUS_BTN') },
+    { id: 'change_language', title: S(session, 'CHANGE_LANG_BTN') }
   ]);
 }
 

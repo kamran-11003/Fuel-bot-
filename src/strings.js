@@ -70,6 +70,7 @@ const STRINGS = {
 
     NEW_COMPLAINT_BTN: 'New Complaint 📝',
     CHECK_STATUS_BTN:  'Check Status 🔍',
+    CHANGE_LANG_BTN:   'Change Language 🌐',
 
     STATUS_PHONE_PROMPT:
       `📱 Enter your *phone number* (with country code).\n\n📌 Example: 923001234567`,
@@ -78,7 +79,7 @@ const STRINGS = {
       `⚠️ Invalid phone number. Please enter 10–12 digits.\n\n📌 Example: 923001234567`,
 
     STATUS_CNIC_PROMPT:
-      `🪪 Enter your *CNIC number* to check complaint status.\n\n📌 Example: 3520212345678`,
+      `🪪 Enter your *CNIC number* to check your complaint status.\n\n📌 Example: 3520212345678\n\n_Your WhatsApp number will be used for the lookup._`,
 
     STATUS_RESULT: (data) =>
       `📋 *Complaint Status*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 Status: *${data.status || '—'}*\n📝 Type: ${data.complaint_type || data.type || '—'}\n\nType *Hi* to go back.`,
@@ -166,6 +167,7 @@ const STRINGS = {
 
     NEW_COMPLAINT_BTN: 'نئی شکایت 📝',
     CHECK_STATUS_BTN:  'حیثیت چیک کریں 🔍',
+    CHANGE_LANG_BTN:   'زبان تبدیل کریں 🌐',
 
     STATUS_PHONE_PROMPT:
       `📱 اپنا *فون نمبر* درج کریں (ملکی کوڈ کے ساتھ)۔\n\n📌 مثال: 923001234567`,
@@ -174,7 +176,7 @@ const STRINGS = {
       `⚠️ فون نمبر غلط ہے۔ براہ کرم ۱۰ سے ۱۲ ہندسے درج کریں۔\n\n📌 مثال: 923001234567`,
 
     STATUS_CNIC_PROMPT:
-      `🪪 شکایت کی حیثیت چیک کرنے کے لیے اپنا *شناختی کارڈ نمبر* درج کریں۔\n\n📌 مثال: 3520212345678`,
+      `🪪 شکایت کی حیثیت چیک کرنے کے لیے اپنا *شناختی کارڈ نمبر* درج کریں۔\n\n📌 مثال: 3520212345678\n\n_آپ کا واٹس ایپ نمبر تلاش کے لیے استعمال ہوگا۔_`,
 
     STATUS_RESULT: (data) =>
       `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 حیثیت: *${data.status || '—'}*\n📝 نوعیت: ${data.complaint_type || data.type || '—'}\n\nواپس جانے کے لیے *Hi* لکھیں۔`,
