@@ -328,22 +328,46 @@ async function onStatusCnic(phone, session, input) {
     const statusUrl = process.env.STATUS_API_URL;
     if (statusUrl) {
       try {
+        console.log('\n🔍 STATUS API REQUEST');
+        console.log(`   URL: ${statusUrl}`);
+        console.log(`   Phone: ${session.status_phone}, CNIC: ${cnic}`);
+        console.log(`   Timeout: 8000ms`);
+        
+        const startTime = Date.now();
         const resp = await axios.get(statusUrl, {
           params: { phoneNumber: session.status_phone, cnic },
-          timeout: 8000
+          timeout: 8000,
+          validateStatus: () => true // Don't throw on any status
         });
+        const duration = Date.now() - startTime;
+        
+        console.log(`\n✅ STATUS API RESPONSE (${duration}ms)`);
+        console.log(`   Status: ${resp.status}`);
+        console.log(`   Headers:`, JSON.stringify(resp.headers, null, 2).slice(0, 200));
+        console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
+        
         const data = resp.data;
         const complaint = data?.complaint || data?.complaints?.[0] || data;
         if (complaint && (complaint.status || complaint.complaintCode || complaint.id)) {
+          console.log('✅ Complaint found in response');
           await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
         } else {
+          console.log('⚠️  No complaint data found in response');
           await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
         }
       } catch (e) {
-        console.error('Status API error:', e.message);
+        console.error('\n❌ STATUS API ERROR');
+        console.error(`   Code: ${e.code}`);
+        console.error(`   Message: ${e.message}`);
+        if (e.response) {
+          console.error(`   Status: ${e.response.status}`);
+          console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 200));
+          console.error(`   Body:`, JSON.stringify(e.response.data, null, 2));
+        }
         await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
       }
     } else {
+      console.warn('⚠️  STATUS_API_URL not configured');
       await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
     }
   }
@@ -409,18 +433,48 @@ async function doSubmit(phone, session) {
 
       if (apiUrl) {
         try {
+          console.log('\n📤 COMPLAINT API REQUEST (Multipart/FormData)');
+          console.log(`   URL: ${apiUrl}`);
+          console.log(`   Method: POST`);
+          console.log(`   Timeout: 15000ms`);
+          console.log(`   Image: ${tempFilePath}`);
           const form = buildFormData(tempFilePath, mime, payload);
+          console.log(`   FormData keys:`, Array.from(form.getBuffer?.() ? form._boundary ? ['multipart'] : [] : []).length > 0 ? 'multipart' : 'check form');
+          
+          const startTime = Date.now();
           const resp = await axios.post(apiUrl, form, {
             headers: form.getHeaders(),
             timeout: 15000,
-            maxContentLength: 10 * 1024 * 1024
+            maxContentLength: 10 * 1024 * 1024,
+            validateStatus: () => true // Don't throw on any status
           });
+          const duration = Date.now() - startTime;
+          
+          console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
+          console.log(`   Status: ${resp.status}`);
+          console.log(`   ContentType: ${resp.headers['content-type']}`);
+          console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
+          
           const data = resp.data || {};
           complaintCode = data.complaintId || data.complaint_code || data.id || data.code || null;
-          console.log(`✅ API accepted complaint (multipart). ID: ${complaintCode}`);
+          if (complaintCode) {
+            console.log(`✅ API accepted complaint (multipart). ID: ${complaintCode}`);
+          } else {
+            console.warn('⚠️  No complaint ID in response, will use local fallback');
+          }
         } catch (e) {
-          console.warn('⚠️  API call failed, using local fallback ID:', e.message);
+          console.error('\n❌ COMPLAINT API ERROR');
+          console.error(`   Code: ${e.code}`);
+          console.error(`   Message: ${e.message}`);
+          if (e.response) {
+            console.error(`   Status: ${e.response.status}`);
+            console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 300));
+            console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
+          }
+          console.warn('⚠️  Using local fallback ID');
         }
+      } else {
+        console.warn('⚠️  COMPLAINT_API_URL not configured');
       }
 
       if (!complaintCode) {
@@ -454,13 +508,45 @@ async function doSubmit(phone, session) {
 
   if (apiUrl) {
     try {
-      const resp = await axios.post(apiUrl, payload, { timeout: 8000 });
+      console.log('\n📨 COMPLAINT API REQUEST (JSON/Fallback)');
+      console.log(`   URL: ${apiUrl}`);
+      console.log(`   Method: POST`);
+      console.log(`   Timeout: 8000ms`);
+      console.log(`   Payload:`, JSON.stringify(payload, null, 2).slice(0, 300) + '...');
+
+      const startTime = Date.now();
+      const resp = await axios.post(apiUrl, payload, {
+        timeout: 8000,
+        headers: { 'Content-Type': 'application/json' },
+        validateStatus: () => true
+      });
+      const duration = Date.now() - startTime;
+
+      console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
+      console.log(`   Status: ${resp.status}`);
+      console.log(`   ContentType: ${resp.headers['content-type']}`);
+      console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
+
       const data = resp.data || {};
       complaintCode = data.complaintId || data.complaint_code || data.id || data.code || null;
-      console.log(`✅ API accepted complaint. ID from backend: ${complaintCode}`);
+      if (complaintCode) {
+        console.log(`✅ API accepted complaint. ID from backend: ${complaintCode}`);
+      } else {
+        console.warn('⚠️  No complaint ID in response, will use local fallback');
+      }
     } catch (e) {
-      console.warn('⚠️  API call failed, using local fallback ID:', e.message);
+      console.error('\n❌ COMPLAINT API ERROR (JSON/Fallback)');
+      console.error(`   Code: ${e.code}`);
+      console.error(`   Message: ${e.message}`);
+      if (e.response) {
+        console.error(`   Status: ${e.response.status}`);
+        console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 300));
+        console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
+      }
+      console.warn('⚠️  Using local fallback ID');
     }
+  } else {
+    console.warn('⚠️  COMPLAINT_API_URL not configured');
   }
 
   if (!complaintCode) {
