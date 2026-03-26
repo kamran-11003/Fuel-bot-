@@ -456,9 +456,8 @@ async function doSubmit(phone, session) {
 
             const { buildFormData: _buildFormData } = require('./media');
             const FormData = require('form-data');
-            const path = require('path');
             const form = new FormData();
-            form.append('image', imageBuffer, { filename: 'evidence.jpg', contentType: imageMime });
+            form.append('complaint[images][]', imageBuffer, { filename: 'evidence.jpg', contentType: imageMime });
             form.append('user[phoneNumber]', payload.user.phoneNumber);
             form.append('user[cnic]',        payload.user.cnic);
             form.append('location[lat]',             String(payload.location.lat));
