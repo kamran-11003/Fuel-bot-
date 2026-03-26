@@ -174,10 +174,19 @@ function buildFormData(filePath, mimeType, payload) {
     contentType: mimeType
   });
 
-  // Attach complaint data as JSON fields
-  form.append('user',      JSON.stringify(payload.user));
-  form.append('location',  JSON.stringify(payload.location));
-  form.append('complaint', JSON.stringify(payload.complaint));
+  // Attach complaint data as bracket-notation fields (required by NITB API)
+  form.append('user[phoneNumber]', payload.user.phoneNumber);
+  form.append('user[cnic]',        payload.user.cnic);
+
+  form.append('location[lat]',             String(payload.location.lat));
+  form.append('location[lng]',             String(payload.location.lng));
+  if (payload.location.city)            form.append('location[city]',            payload.location.city);
+  if (payload.location.province)        form.append('location[province]',        payload.location.province);
+  if (payload.location.nearestLandmark) form.append('location[nearestLandmark]', payload.location.nearestLandmark);
+
+  form.append('complaint[type]',        payload.complaint.type);
+  form.append('complaint[pumpBrand]',   payload.complaint.pumpBrand);
+  form.append('complaint[description]', payload.complaint.description);
 
   if (payload.complaintCode) {
     form.append('complaintCode', payload.complaintCode);

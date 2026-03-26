@@ -335,7 +335,8 @@ async function onStatusCnic(phone, session, input) {
         
         const startTime = Date.now();
         const resp = await axios.get(statusUrl, {
-          params: { phoneNumber: session.status_phone, cnic },
+          params: { phone: session.status_phone, cnic },
+          headers: { 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
           timeout: 8000,
           validateStatus: () => true // Don't throw on any status
         });
@@ -347,10 +348,15 @@ async function onStatusCnic(phone, session, input) {
         console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
         
         const data = resp.data;
-        const complaint = data?.complaint || data?.complaints?.[0] || data;
-        if (complaint && (complaint.status || complaint.complaintCode || complaint.id)) {
+        // NITB returns { success, data: [...], pagination }
+        const complaints = data?.data || [];
+        const complaint = complaints[0] || data?.complaint || data?.complaints?.[0];
+        if (complaint && (complaint.status || complaint.complaint_code || complaint.id)) {
           console.log('✅ Complaint found in response');
           await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
+        } else if (data?.success && complaints.length === 0) {
+          console.log('⚠️  No complaints found for this phone');
+          await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
         } else {
           console.log('⚠️  No complaint data found in response');
           await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
@@ -443,7 +449,7 @@ async function doSubmit(phone, session) {
           
           const startTime = Date.now();
           const resp = await axios.post(apiUrl, form, {
-            headers: form.getHeaders(),
+            headers: { ...form.getHeaders(), 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
             timeout: 15000,
             maxContentLength: 10 * 1024 * 1024,
             validateStatus: () => true // Don't throw on any status
@@ -517,7 +523,7 @@ async function doSubmit(phone, session) {
       const startTime = Date.now();
       const resp = await axios.post(apiUrl, payload, {
         timeout: 8000,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
         validateStatus: () => true
       });
       const duration = Date.now() - startTime;
