@@ -278,14 +278,9 @@ async function onEditSelect(phone, session, input) {
 }
 
 async function onConfirmation(phone, session, input) {
-  if (input.type === 'button' && input.value === 'start') {
-    const fresh = resetSession(phone);
-    await sendLanguagePrompt(phone, fresh);
-    return;
-  }
-  await sendButtonMessage(phone, S(session, 'NEW_COMPLAINT_PROMPT'), [
-    { id: 'start', title: S(session, 'START_BTN') }
-  ]);
+  // After confirmation, move to main menu to allow new complaint or status check
+  updateSession(phone, { state: STATES.MAIN_MENU });
+  await sendMainMenu(phone, session);
 }
 
 // ---------------------------------------------------------------------------
