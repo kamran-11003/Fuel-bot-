@@ -433,64 +433,67 @@ async function doSubmit(phone, session) {
       tempFilePath = saveTempFile(buffer, mime);
       console.log(`✅ Image saved to temp: ${tempFilePath}`);
 
-      // Step 5: Build FormData and POST as multipart
-      const apiUrl = process.env.COMPLAINT_API_URL;
-      let complaintCode = null;
-
-      if (apiUrl) {
-        try {
-          console.log('\n📤 COMPLAINT API REQUEST (Multipart/FormData)');
-          console.log(`   URL: ${apiUrl}`);
-          console.log(`   Method: POST`);
-          console.log(`   Timeout: 15000ms`);
-          console.log(`   Image: ${tempFilePath}`);
-          const form = buildFormData(tempFilePath, mime, payload);
-          console.log(`   FormData keys:`, Array.from(form.getBuffer?.() ? form._boundary ? ['multipart'] : [] : []).length > 0 ? 'multipart' : 'check form');
-          
-          const startTime = Date.now();
-          const resp = await axios.post(apiUrl, form, {
-            headers: { ...form.getHeaders(), 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
-            timeout: 15000,
-            maxContentLength: 10 * 1024 * 1024,
-            validateStatus: () => true // Don't throw on any status
-          });
-          const duration = Date.now() - startTime;
-          
-          console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
-          console.log(`   Status: ${resp.status}`);
-          console.log(`   ContentType: ${resp.headers['content-type']}`);
-          console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
-          
-          const data = resp.data || {};
-          complaintCode = data.complaintId || data.complaint_code || data.id || data.code || null;
-          if (complaintCode) {
-            console.log(`✅ API accepted complaint (multipart). ID: ${complaintCode}`);
-          } else {
-            console.warn('⚠️  No complaint ID in response, will use local fallback');
-          }
-        } catch (e) {
-          console.error('\n❌ COMPLAINT API ERROR');
-          console.error(`   Code: ${e.code}`);
-          console.error(`   Message: ${e.message}`);
-          if (e.response) {
-            console.error(`   Status: ${e.response.status}`);
-            console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 300));
-            console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
-          }
-          console.warn('⚠️  Using local fallback ID');
-        }
-      } else {
-        console.warn('⚠️  COMPLAINT_API_URL not configured');
-      }
-
-      if (!complaintCode) {
-        complaintCode = generateComplaintCode();
-        console.log(`ℹ️  Using local complaint code: ${complaintCode}`);
-      }
-
+      // Step 5: Generate local code immediately, confirm user, then submit to NITB in background
+      const complaintCode = generateComplaintCode();
       saveComplaint(session, complaintCode);
       updateSession(phone, { state: STATES.CONFIRMATION });
       await sendTextMessage(phone, S(session, 'CONFIRM_MSG', complaintCode));
+      console.log(`ℹ️  Local complaint code assigned: ${complaintCode}`);
+
+      // Fire-and-forget: submit to NITB API without blocking the user
+      const apiUrl = process.env.COMPLAINT_API_URL;
+      if (apiUrl) {
+        // Read image buffer before temp file gets cleaned up in finally block
+        const imageBuffer = require('fs').readFileSync(tempFilePath);
+        const imageMime   = mime;
+
+        setImmediate(async () => {
+          try {
+            console.log('\n📤 COMPLAINT API REQUEST (Multipart/FormData) [background]');
+            console.log(`   URL: ${apiUrl}`);
+            console.log(`   Local Code: ${complaintCode}`);
+            console.log(`   Image size: ${imageBuffer.length} bytes`);
+
+            const { buildFormData: _buildFormData } = require('./media');
+            const FormData = require('form-data');
+            const path = require('path');
+            const form = new FormData();
+            form.append('image', imageBuffer, { filename: 'evidence.jpg', contentType: imageMime });
+            form.append('user[phoneNumber]', payload.user.phoneNumber);
+            form.append('user[cnic]',        payload.user.cnic);
+            form.append('location[lat]',             String(payload.location.lat));
+            form.append('location[lng]',             String(payload.location.lng));
+            if (payload.location.city)            form.append('location[city]',            payload.location.city);
+            if (payload.location.province)        form.append('location[province]',        payload.location.province);
+            if (payload.location.nearestLandmark) form.append('location[nearestLandmark]', payload.location.nearestLandmark);
+            form.append('complaint[type]',        payload.complaint.type);
+            form.append('complaint[pumpBrand]',   payload.complaint.pumpBrand);
+            form.append('complaint[description]', payload.complaint.description);
+
+            const startTime = Date.now();
+            const resp = await axios.post(apiUrl, form, {
+              headers: { ...form.getHeaders(), 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
+              timeout: 60000,
+              maxContentLength: 10 * 1024 * 1024,
+              validateStatus: () => true
+            });
+            const duration = Date.now() - startTime;
+
+            console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
+            console.log(`   Status: ${resp.status}`);
+            console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
+          } catch (e) {
+            console.error('\n❌ COMPLAINT API ERROR [background]');
+            console.error(`   Code: ${e.code}`);
+            console.error(`   Message: ${e.message}`);
+            if (e.response) {
+              console.error(`   Status: ${e.response.status}`);
+              console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
+            }
+          }
+        });
+      }
+
       return;
 
     }
