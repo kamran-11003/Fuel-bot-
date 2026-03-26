@@ -54,7 +54,13 @@ const STRINGS = {
     EDIT_PROMPT: `What would you like to edit?`,
 
     CONFIRM_MSG: (code) =>
-      `🎉 *Complaint Registered!*\n\n🔖 ID: *${code}*\n📊 Status: Pending\n\nWe will act on your complaint shortly.\n\nType *Hi* to submit another complaint.`,
+      `✅ *Complaint Received!*\n\n🔖 Reference: *${code}*\n\nYour complaint is being submitted to the portal. You will receive a confirmation shortly.`,
+
+    NITB_SUCCESS_MSG: (id) =>
+      `🎉 *Complaint Confirmed on Portal!*\n\n✅ Your complaint has been officially registered.\n🔖 Official ID: *${id}*\n\nWe will take action shortly.`,
+
+    NITB_FAIL_MSG: (code) =>
+      `⚠️ *Portal Temporarily Unavailable*\n\nWe could not submit your complaint to the portal right now.\n🔖 Your local reference: *${code}*\n\nPlease try again after some time. We apologize for the inconvenience.`,
 
     NEW_COMPLAINT_PROMPT:
       `Your complaint has been submitted. Would you like to file a new complaint?`,
@@ -70,7 +76,7 @@ const STRINGS = {
 
     NEW_COMPLAINT_BTN: 'New Complaint 📝',
     CHECK_STATUS_BTN:  'Check Status 🔍',
-    CHANGE_LANG_BTN:   'Change Language 🌐',
+    CHANGE_LANG_BTN:   'اردو 🇵🇰',
 
     STATUS_PHONE_PROMPT:
       `📱 Enter your *phone number* (with country code).\n\n📌 Example: 923001234567`,
@@ -151,7 +157,13 @@ const STRINGS = {
     EDIT_PROMPT: `آپ کیا تبدیل کرنا چاہتے ہیں؟`,
 
     CONFIRM_MSG: (code) =>
-      `🎉 *شکایت درج ہو گئی!*\n\n🔖 ID: *${code}*\n📊 حیثیت: زیر غور\n\nہم جلد کارروائی کریں گے۔\n\nنئی شکایت کے لیے *Hi* لکھیں۔`,
+      `✅ *شکایت موصول ہو گئی!*\n\n🔖 حوالہ نمبر: *${code}*\n\nآپ کی شکایت پورٹل پر بھیجی جا رہی ہے۔ جلد ہی تصدیق موصول ہوگی۔`,
+
+    NITB_SUCCESS_MSG: (id) =>
+      `🎉 *شکایت پورٹل پر تصدیق ہو گئی!*\n\n✅ آپ کی شکایت سرکاری طور پر درج ہو گئی۔\n🔖 سرکاری ID: *${id}*\n\nہم جلد کارروائی کریں گے۔`,
+
+    NITB_FAIL_MSG: (code) =>
+      `⚠️ *پورٹل عارضی طور پر دستیاب نہیں*\n\nابھی آپ کی شکایت پورٹل پر جمع نہیں ہو سکی۔\n🔖 آپ کا مقامی حوالہ: *${code}*\n\nکچھ دیر بعد دوبارہ کوشش کریں۔ معذرت خواہ ہیں۔`,
 
     NEW_COMPLAINT_PROMPT:
       `آپ کی شکایت جمع ہو گئی۔ کیا آپ نئی شکایت درج کرنا چاہتے ہیں؟`,
@@ -167,7 +179,7 @@ const STRINGS = {
 
     NEW_COMPLAINT_BTN: 'نئی شکایت 📝',
     CHECK_STATUS_BTN:  'حیثیت چیک کریں 🔍',
-    CHANGE_LANG_BTN:   'زبان تبدیل کریں 🌐',
+    CHANGE_LANG_BTN:   'English 🇬🇧',
 
     STATUS_PHONE_PROMPT:
       `📱 اپنا *فون نمبر* درج کریں (ملکی کوڈ کے ساتھ)۔\n\n📌 مثال: 923001234567`,

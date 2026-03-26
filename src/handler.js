@@ -361,19 +361,24 @@ async function onStatusCnic(phone, session, input) {
         console.log(`   Headers:`, JSON.stringify(resp.headers, null, 2).slice(0, 200));
         console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
         
-        const data = resp.data;
-        // NITB returns { success, data: [...], pagination }
-        const complaints = data?.data || [];
-        const complaint = complaints[0] || data?.complaint || data?.complaints?.[0];
-        if (complaint && (complaint.status || complaint.complaint_code || complaint.id)) {
-          console.log('✅ Complaint found in response');
-          await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
-        } else if (data?.success && complaints.length === 0) {
-          console.log('⚠️  No complaints found for this phone');
-          await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+        if (resp.status >= 400) {
+          console.log(`⚠️  Status API returned HTTP ${resp.status}`);
+          await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
         } else {
-          console.log('⚠️  No complaint data found in response');
-          await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+          const data = resp.data;
+          // NITB returns { success, data: [...], pagination }
+          const complaints = data?.data || [];
+          const complaint = complaints[0] || data?.complaint || data?.complaints?.[0];
+          if (complaint && (complaint.status || complaint.complaint_code || complaint.id)) {
+            console.log('✅ Complaint found in response');
+            await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
+          } else if (data?.success && complaints.length === 0) {
+            console.log('⚠️  No complaints found for this phone');
+            await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+          } else {
+            console.log('⚠️  No complaint data found in response');
+            await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+          }
         }
       } catch (e) {
         console.error('\n❌ STATUS API ERROR');
@@ -384,7 +389,7 @@ async function onStatusCnic(phone, session, input) {
           console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 200));
           console.error(`   Body:`, JSON.stringify(e.response.data, null, 2));
         }
-        await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+        await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
       }
     } else {
       console.warn('⚠️  STATUS_API_URL not configured');
@@ -460,6 +465,7 @@ async function doSubmit(phone, session) {
         // Read image buffer before temp file gets cleaned up in finally block
         const imageBuffer = require('fs').readFileSync(tempFilePath);
         const imageMime   = mime;
+        const sessionLang = session.lang; // capture language for background notification
 
         setImmediate(async () => {
           try {
@@ -495,6 +501,15 @@ async function doSubmit(phone, session) {
             console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
             console.log(`   Status: ${resp.status}`);
             console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
+
+            // Notify user of NITB submission result
+            const nitbData = resp.data || {};
+            const nitbId   = nitbData.id || nitbData.complaint_code || nitbData.complaintId || nitbData.code || null;
+            if ((resp.status === 200 || resp.status === 201) && nitbId) {
+              await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_SUCCESS_MSG', nitbId));
+            } else if (resp.status >= 400) {
+              await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG', complaintCode));
+            }
           } catch (e) {
             console.error('\n❌ COMPLAINT API ERROR [background]');
             console.error(`   Code: ${e.code}`);
@@ -503,6 +518,7 @@ async function doSubmit(phone, session) {
               console.error(`   Status: ${e.response.status}`);
               console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
             }
+            await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_FAIL_MSG', complaintCode));
           }
         });
       }
