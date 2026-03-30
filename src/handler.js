@@ -611,8 +611,7 @@ async function sendLanguagePrompt(phone, session) {
 async function sendMainMenu(phone, session) {
   await sendButtonMessage(phone, S(session, 'MAIN_MENU_PROMPT'), [
     { id: 'new_complaint',   title: S(session, 'NEW_COMPLAINT_BTN') },
-    { id: 'check_status',    title: S(session, 'CHECK_STATUS_BTN') },
-    { id: 'change_language', title: S(session, 'CHANGE_LANG_BTN') }
+    { id: 'check_status',    title: S(session, 'CHECK_STATUS_BTN') }
   ]);
 }
 
