@@ -456,7 +456,6 @@ async function doSubmit(phone, session) {
       const complaintCode = generateComplaintCode();
       saveComplaint(session, complaintCode);
       updateSession(phone, { state: STATES.CONFIRMATION });
-      await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
       console.log(`ℹ️  Local complaint code assigned: ${complaintCode}`);
 
       // API submission disabled — send dummy success after a short delay
@@ -537,7 +536,6 @@ async function doSubmit(phone, session) {
 
   saveComplaint(session, complaintCode);
   updateSession(phone, { state: STATES.CONFIRMATION });
-  await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
 }
 
 // ---------------------------------------------------------------------------
