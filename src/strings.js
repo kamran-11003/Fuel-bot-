@@ -104,6 +104,9 @@ Type *Hi* to continue.`,
     STATUS_RESULT: (data) =>
       `📋 *Complaint Status*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 Status: *${data.status || '—'}*\n📝 Type: ${data.complaint_type || data.type || '—'}\n\nType *Hi* to go back.`,
 
+    STATUS_DUMMY_PENDING: (data) =>
+      `📋 *Complaint Status*\n\n🔖 ID: *${data.complaint_code || '—'}*\n📊 Status: *Pending*\n📝 Type: ${data.complaint_type || '—'}\n\nThis is a temporary status while the API is in development.\n\nType *Hi* to continue.`,
+
     STATUS_NOT_FOUND:
       `❌ No complaint found for the given phone number and CNIC.\n\nType *Hi* to try again.`,
 
@@ -220,6 +223,9 @@ Type *Hi* to continue.`,
 
     STATUS_RESULT: (data) =>
       `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaint_code || data.complaintCode || '—'}*\n📊 حیثیت: *${data.status || '—'}*\n📝 نوعیت: ${data.complaint_type || data.type || '—'}\n\nواپس جانے کے لیے *Hi* لکھیں۔`,
+
+    STATUS_DUMMY_PENDING: (data) =>
+      `📋 *شکایت کی حیثیت*\n\n🔖 ID: *${data.complaint_code || '—'}*\n📊 حیثیت: *زیر التوا*\n📝 نوعیت: ${data.complaint_type || '—'}\n\nAPI تیار ہونے تک یہ عارضی حیثیت ہے۔\n\nجاری رکھنے کے لیے *Hi* لکھیں۔`,
 
     STATUS_NOT_FOUND:
       `❌ دیئے گئے فون نمبر اور شناختی کارڈ سے کوئی شکایت نہیں ملی۔\n\nدوبارہ کوشش کے لیے *Hi* لکھیں۔`,

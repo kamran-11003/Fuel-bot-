@@ -331,71 +331,15 @@ async function onStatusCnic(phone, session, input) {
 
   updateSession(phone, { status_cnic: cnic });
 
-  // Look up complaints locally (in-memory store)
-  const matches = findComplaintsByPhoneAndCnic(session.status_phone, cnic);
-
-  if (matches.length > 0) {
-    const latest = matches[matches.length - 1];
-    await sendTextMessage(phone, S(session, 'STATUS_RESULT', latest));
-  } else {
-    // If an external STATUS_API_URL is configured, try that as fallback
-    const statusUrl = process.env.STATUS_API_URL;
-    if (statusUrl) {
-      try {
-        console.log('\n🔍 STATUS API REQUEST');
-        console.log(`   URL: ${statusUrl}`);
-        console.log(`   Phone: ${session.status_phone}, CNIC: ${cnic}`);
-        console.log(`   Timeout: 8000ms`);
-        
-        const startTime = Date.now();
-        const resp = await axios.get(statusUrl, {
-          params: { phone: session.status_phone, cnic },
-          headers: { ...NITB_HEADERS, 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
-          timeout: 8000,
-          validateStatus: () => true // Don't throw on any status
-        });
-        const duration = Date.now() - startTime;
-        
-        console.log(`\n✅ STATUS API RESPONSE (${duration}ms)`);
-        console.log(`   Status: ${resp.status}`);
-        console.log(`   Headers:`, JSON.stringify(resp.headers, null, 2).slice(0, 200));
-        console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
-        
-        if (resp.status >= 400) {
-          console.log(`⚠️  Status API returned HTTP ${resp.status}`);
-          await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
-        } else {
-          const data = resp.data;
-          // NITB returns { success, data: [...], pagination }
-          const complaints = data?.data || [];
-          const complaint = complaints[0] || data?.complaint || data?.complaints?.[0];
-          if (complaint && (complaint.status || complaint.complaint_code || complaint.id)) {
-            console.log('✅ Complaint found in response');
-            await sendTextMessage(phone, S(session, 'STATUS_RESULT', complaint));
-          } else if (data?.success && complaints.length === 0) {
-            console.log('⚠️  No complaints found for this phone');
-            await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
-          } else {
-            console.log('⚠️  No complaint data found in response');
-            await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
-          }
-        }
-      } catch (e) {
-        console.error('\n❌ STATUS API ERROR');
-        console.error(`   Code: ${e.code}`);
-        console.error(`   Message: ${e.message}`);
-        if (e.response) {
-          console.error(`   Status: ${e.response.status}`);
-          console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 200));
-          console.error(`   Body:`, JSON.stringify(e.response.data, null, 2));
-        }
-        await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
-      }
-    } else {
-      console.warn('⚠️  STATUS_API_URL not configured');
-      await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
-    }
-  }
+  // Status API is disabled during development; return a dummy pending status.
+  const localMatches = findComplaintsByPhoneAndCnic(session.status_phone, cnic);
+  const latestLocal = localMatches.length > 0 ? localMatches[localMatches.length - 1] : null;
+  const dummy = {
+    complaint_code: latestLocal?.complaint_code || `NITB-${Date.now().toString().slice(-6)}`,
+    status: 'Pending',
+    complaint_type: latestLocal?.complaint_type || '—'
+  };
+  await sendTextMessage(phone, S(session, 'STATUS_DUMMY_PENDING', dummy));
 
   updateSession(phone, { state: STATES.MAIN_MENU });
   await sendMainMenu(phone, session);
