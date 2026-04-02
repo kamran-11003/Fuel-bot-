@@ -377,128 +377,103 @@ async function doSubmit(phone, session) {
 
   // --- Secure image download + upload ---
   let tempFilePath = null;
+  let mime         = null;
 
+  // ── Step 1-4: Download, validate and save image ──────────────────────────
   try {
     if (session.has_image && session.image_id) {
-      console.log('📥 Downloading image from Meta API...');
-
-      // Step 1: Get media download URL
+      console.log(`[SUBMIT] Step 1: Fetching media URL for image_id=${session.image_id}`);
       const media = await getMediaUrl(session.image_id);
+      console.log(`[SUBMIT] Step 1 OK: url=${media.url} mimeType=${media.mimeType} fileSize=${media.fileSize}`);
 
-      // Step 2: Download the image (SSRF-safe, size-limited)
+      console.log('[SUBMIT] Step 2: Downloading image bytes...');
       const { buffer, contentType } = await downloadMedia(media.url);
-      const mime = media.mimeType || contentType;
+      mime = media.mimeType || contentType;
+      console.log(`[SUBMIT] Step 2 OK: bytes=${buffer.length} contentType=${contentType} resolved mime=${mime}`);
 
-      // Step 3: Validate image (MIME + magic bytes + content scan)
+      console.log('[SUBMIT] Step 3: Validating image...');
       validateImage(buffer, mime);
+      console.log('[SUBMIT] Step 3 OK: image passed validation');
 
-      // Step 4: Save to temp file
+      console.log('[SUBMIT] Step 4: Saving temp file...');
       tempFilePath = saveTempFile(buffer, mime);
-      console.log(`✅ Image saved to temp: ${tempFilePath}`);
-
-      // Step 5: Submit to NITB API as multipart/form-data
-      const form    = buildFormData(tempFilePath, mime, payload);
-      const apiUrl  = process.env.COMPLAINT_API_URL;
-
-      const resp = await axios.post(apiUrl, form, {
-        maxBodyLength: Infinity,
-        timeout: 30000,
-        headers: {
-          'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
-          ...NITB_HEADERS,
-          ...form.getHeaders()
-        },
-        validateStatus: () => true
-      });
-
-      console.log(`NITB API response (${resp.status}):`, JSON.stringify(resp.data));
-
-      const respData = resp.data || {};
-      const nitbId   = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
-
-      const complaintCode = generateComplaintCode();
-      saveComplaint(session, complaintCode);
-
-      if (resp.status >= 200 && resp.status < 300) {
-        await sendTextMessage(phone, S(session, 'NITB_SUCCESS_MSG', nitbId || complaintCode));
-      } else {
-        console.warn(`NITB API error ${resp.status}:`, JSON.stringify(respData));
-        await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
-      }
-
-      updateSession(phone, { state: STATES.MAIN_MENU });
-      await sendMainMenu(phone, session);
-      return;
-
+      console.log(`[SUBMIT] Step 4 OK: tempFilePath=${tempFilePath}`);
     }
   } catch (imgErr) {
-    console.error('Image processing error:', imgErr.message);
-    // Ask user to re-send the image
+    console.error(`[SUBMIT] Image error at step 1-4: ${imgErr.message}`);
+    cleanupTempFile(tempFilePath);
     updateSession(phone, { has_image: false, image_id: null, image_mime: null, state: STATES.IMAGE_UPLOAD });
     await sendTextMessage(phone, S(session, 'IMAGE_DOWNLOAD_FAILED'));
     return;
+  }
+
+  // ── Step 5: Submit to NITB API ────────────────────────────────────────────
+  try {
+    const form   = buildFormData(tempFilePath, mime, payload);
+    const apiUrl = process.env.COMPLAINT_API_URL;
+
+    console.log(`[SUBMIT] Step 5: Posting to NITB API: ${apiUrl}`);
+    console.log(`[SUBMIT]   phone=${payload.user.phoneNumber} cnic=${payload.user.cnic}`);
+    console.log(`[SUBMIT]   lat=${payload.location.lat} lng=${payload.location.lng}`);
+    console.log(`[SUBMIT]   city=${payload.location.city} province=${payload.location.province}`);
+    console.log(`[SUBMIT]   landmark=${payload.location.nearestLandmark}`);
+    console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
+    console.log(`[SUBMIT]   description=${payload.complaint.description}`);
+    console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
+    const formHeaders = form.getHeaders();
+    console.log(`[SUBMIT]   content-type header: ${formHeaders['content-type']}`);
+
+    const t0   = Date.now();
+    const resp = await axios.post(apiUrl, form, {
+      maxBodyLength: Infinity,
+      timeout: 120000,
+      headers: {
+        'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
+        ...NITB_HEADERS,
+        ...formHeaders
+      },
+      validateStatus: () => true
+    });
+    const elapsed = Date.now() - t0;
+
+    console.log(`[SUBMIT] Step 5 response: status=${resp.status} elapsed=${elapsed}ms`);
+    console.log(`[SUBMIT]   response headers: ${JSON.stringify(resp.headers)}`);
+    console.log(`[SUBMIT]   response body: ${JSON.stringify(resp.data)}`);
+
+    const respData = resp.data || {};
+    const nitbId   = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
+    console.log(`[SUBMIT]   extracted nitbId=${nitbId}`);
+
+    const complaintCode = generateComplaintCode();
+    saveComplaint(session, complaintCode);
+
+    if (resp.status >= 200 && resp.status < 300) {
+      console.log(`[SUBMIT] Success — sending NITB_SUCCESS_MSG with id=${nitbId || complaintCode}`);
+      await sendTextMessage(phone, S(session, 'NITB_SUCCESS_MSG', nitbId || complaintCode));
+    } else {
+      console.warn(`[SUBMIT] Non-2xx from NITB (${resp.status}) — sending NITB_FAIL_MSG`);
+      await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
+    }
+
+    updateSession(phone, { state: STATES.MAIN_MENU });
+    await sendMainMenu(phone, session);
+    return;
+
+  } catch (apiErr) {
+    console.error(`[SUBMIT] NITB API error: ${apiErr.message}`);
+    if (apiErr.code) console.error(`[SUBMIT]   error code: ${apiErr.code}`);
+    if (apiErr.response) {
+      console.error(`[SUBMIT]   response status: ${apiErr.response.status}`);
+      console.error(`[SUBMIT]   response body: ${JSON.stringify(apiErr.response.data)}`);
+    }
+    const complaintCode = generateComplaintCode();
+    saveComplaint(session, complaintCode);
+    await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
+    updateSession(phone, { state: STATES.MAIN_MENU });
+    await sendMainMenu(phone, session);
   } finally {
     cleanupTempFile(tempFilePath);
   }
-
-  // Fallback: no image (should not reach here since image is mandatory,
-  // but kept for safety in case of edge cases)
-  console.log(JSON.stringify(payload, null, 2));
-  console.log('═══════════════════════════════════════\n');
-
-  let complaintCode = null;
-  const apiUrl = process.env.COMPLAINT_API_URL;
-
-  if (apiUrl) {
-    try {
-      console.log('\n📨 COMPLAINT API REQUEST (JSON/Fallback)');
-      console.log(`   URL: ${apiUrl}`);
-      console.log(`   Method: POST`);
-      console.log(`   Timeout: 8000ms`);
-      console.log(`   Payload:`, JSON.stringify(payload, null, 2).slice(0, 300) + '...');
-
-      const startTime = Date.now();
-      const resp = await axios.post(apiUrl, payload, {
-        timeout: 8000,
-        headers: { 'Content-Type': 'application/json', ...NITB_HEADERS, 'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET },
-        validateStatus: () => true
-      });
-      const duration = Date.now() - startTime;
-
-      console.log(`\n✅ COMPLAINT API RESPONSE (${duration}ms)`);
-      console.log(`   Status: ${resp.status}`);
-      console.log(`   ContentType: ${resp.headers['content-type']}`);
-      console.log(`   Body:`, JSON.stringify(resp.data, null, 2));
-
-      const data = resp.data || {};
-      complaintCode = data.complaintId || data.complaint_code || data.id || data.code || null;
-      if (complaintCode) {
-        console.log(`✅ API accepted complaint. ID from backend: ${complaintCode}`);
-      } else {
-        console.warn('⚠️  No complaint ID in response, will use local fallback');
-      }
-    } catch (e) {
-      console.error('\n❌ COMPLAINT API ERROR (JSON/Fallback)');
-      console.error(`   Code: ${e.code}`);
-      console.error(`   Message: ${e.message}`);
-      if (e.response) {
-        console.error(`   Status: ${e.response.status}`);
-        console.error(`   Headers:`, JSON.stringify(e.response.headers).slice(0, 300));
-        console.error(`   Body:`, JSON.stringify(e.response.data, null, 2).slice(0, 500));
-      }
-      console.warn('⚠️  Using local fallback ID');
-    }
-  } else {
-    console.warn('⚠️  COMPLAINT_API_URL not configured');
-  }
-
-  if (!complaintCode) {
-    complaintCode = generateComplaintCode();
-    console.log(`ℹ️  Using local complaint code: ${complaintCode}`);
-  }
-
-  saveComplaint(session, complaintCode);
-  updateSession(phone, { state: STATES.CONFIRMATION });
 }
 
 // ---------------------------------------------------------------------------
