@@ -332,15 +332,62 @@ async function onStatusCnic(phone, session, input) {
 
   updateSession(phone, { status_cnic: cnic });
 
-  // Status API is disabled during development; return a dummy pending status.
-  const localMatches = findComplaintsByPhoneAndCnic(session.status_phone, cnic);
-  const latestLocal = localMatches.length > 0 ? localMatches[localMatches.length - 1] : null;
-  const dummy = {
-    complaint_code: latestLocal?.complaint_code || `NITB-${Date.now().toString().slice(-6)}`,
-    status: 'Pending',
-    complaint_type: latestLocal?.complaint_type || '—'
-  };
-  await sendTextMessage(phone, S(session, 'STATUS_DUMMY_PENDING', dummy));
+  // Call NITB status API via curl
+  const statusUrl = `${process.env.STATUS_API_URL}?phone=${encodeURIComponent(session.status_phone)}`;
+  console.log(`[STATUS] Fetching: ${statusUrl}`);
+
+  try {
+    const curlArgs = [
+      '--location',
+      '--silent',
+      '--show-error',
+      '--max-time', '15',
+      '--write-out', '\n__HTTP_STATUS__%{http_code}',
+      '-X', 'GET',
+      statusUrl,
+      '--header', `X-WhatsApp-Secret: ${process.env.NITB_WHATSAPP_SECRET}`,
+      '--header', 'Accept: application/json',
+      '--header', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      '--header', 'Origin: https://icta.nitb.gov.pk',
+      '--header', 'Referer: https://icta.nitb.gov.pk/'
+    ];
+
+    const t0 = Date.now();
+    const { stdout, stderr } = await new Promise((resolve, reject) => {
+      execFile('curl', curlArgs, { maxBuffer: 2 * 1024 * 1024 }, (err, stdout, stderr) => {
+        if (err) reject(Object.assign(err, { stdout, stderr }));
+        else     resolve({ stdout, stderr });
+      });
+    });
+    const elapsed = Date.now() - t0;
+
+    if (stderr) console.log(`[STATUS] curl stderr: ${stderr.trim()}`);
+    console.log(`[STATUS] curl stdout (${elapsed}ms): ${stdout.trim()}`);
+
+    const statusMatch = stdout.match(/__HTTP_STATUS__(\d+)/);
+    const httpStatus  = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+    const body        = stdout.replace(/\n__HTTP_STATUS__\d+$/, '').trim();
+    console.log(`[STATUS] http status=${httpStatus} body=${body}`);
+
+    let respData = {};
+    try { respData = JSON.parse(body); } catch (_) { /* non-JSON */ }
+
+    if (httpStatus >= 200 && httpStatus < 300 && (respData.complaint_code || respData.complaintCode || respData.id || respData.status)) {
+      console.log(`[STATUS] Success — showing STATUS_RESULT`);
+      await sendTextMessage(phone, S(session, 'STATUS_RESULT', respData));
+    } else if (httpStatus === 404 || (!respData.complaint_code && !respData.complaintCode && !respData.id)) {
+      console.log(`[STATUS] Not found`);
+      await sendTextMessage(phone, S(session, 'STATUS_NOT_FOUND'));
+    } else {
+      console.warn(`[STATUS] Unexpected response (${httpStatus})`);
+      await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
+    }
+  } catch (err) {
+    console.error(`[STATUS] curl failed: ${err.message}`);
+    if (err.stdout) console.error(`[STATUS]   stdout: ${err.stdout.trim()}`);
+    if (err.stderr) console.error(`[STATUS]   stderr: ${err.stderr.trim()}`);
+    await sendTextMessage(phone, S(session, 'STATUS_ERROR'));
+  }
 
   updateSession(phone, { state: STATES.MAIN_MENU });
   await sendMainMenu(phone, session);
