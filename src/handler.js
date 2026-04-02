@@ -409,49 +409,82 @@ async function doSubmit(phone, session) {
 
   // ── Step 5: Submit to NITB API ────────────────────────────────────────────
   try {
-    const form   = buildFormData(tempFilePath, mime, payload);
     const apiUrl = process.env.COMPLAINT_API_URL;
 
-    console.log(`[SUBMIT] Step 5: Posting to NITB API: ${apiUrl}`);
-    console.log(`[SUBMIT]   phone=${payload.user.phoneNumber} cnic=${payload.user.cnic}`);
-    console.log(`[SUBMIT]   lat=${payload.location.lat} lng=${payload.location.lng}`);
-    console.log(`[SUBMIT]   city=${payload.location.city} province=${payload.location.province}`);
-    console.log(`[SUBMIT]   landmark=${payload.location.nearestLandmark}`);
-    console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
-    console.log(`[SUBMIT]   description=${payload.complaint.description}`);
-    console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
-    const formHeaders = form.getHeaders();
-    console.log(`[SUBMIT]   content-type header: ${formHeaders['content-type']}`);
+    // Tell user we're submitting so they don't think it's stuck
+    await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
 
-    const t0   = Date.now();
-    const resp = await axios.post(apiUrl, form, {
-      maxBodyLength: Infinity,
-      timeout: 120000,
-      headers: {
-        'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
-        ...NITB_HEADERS,
-        ...formHeaders
-      },
-      validateStatus: () => true
-    });
-    const elapsed = Date.now() - t0;
+    const MAX_ATTEMPTS = 3;
+    let lastErr = null;
+    let resp    = null;
 
-    console.log(`[SUBMIT] Step 5 response: status=${resp.status} elapsed=${elapsed}ms`);
-    console.log(`[SUBMIT]   response headers: ${JSON.stringify(resp.headers)}`);
-    console.log(`[SUBMIT]   response body: ${JSON.stringify(resp.data)}`);
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      // Rebuild form each attempt — streams cannot be reused after first read
+      const form        = buildFormData(tempFilePath, mime, payload);
+      const formHeaders = form.getHeaders();
+
+      // Compute Content-Length explicitly. Without it axios falls back to
+      // chunked transfer encoding which causes NITB's server to hang.
+      const contentLength = await new Promise((resolve, reject) => {
+        form.getLength((err, len) => (err ? reject(err) : resolve(len)));
+      });
+
+      console.log(`[SUBMIT] Step 5 attempt ${attempt}/${MAX_ATTEMPTS}: POST ${apiUrl}`);
+      console.log(`[SUBMIT]   phone=${payload.user.phoneNumber} cnic=${payload.user.cnic}`);
+      console.log(`[SUBMIT]   lat=${payload.location.lat} lng=${payload.location.lng}`);
+      console.log(`[SUBMIT]   city=${payload.location.city} province=${payload.location.province}`);
+      console.log(`[SUBMIT]   landmark=${payload.location.nearestLandmark}`);
+      console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
+      console.log(`[SUBMIT]   description=${payload.complaint.description}`);
+      console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
+      console.log(`[SUBMIT]   content-type: ${formHeaders['content-type']}`);
+      console.log(`[SUBMIT]   content-length: ${contentLength}`);
+
+      try {
+        const t0 = Date.now();
+        resp = await axios.post(apiUrl, form, {
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          timeout: 120000,
+          headers: {
+            'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
+            ...NITB_HEADERS,
+            ...formHeaders,
+            'Content-Length': contentLength
+          },
+          validateStatus: () => true
+        });
+        const elapsed = Date.now() - t0;
+        console.log(`[SUBMIT] Attempt ${attempt} response: status=${resp.status} elapsed=${elapsed}ms`);
+        console.log(`[SUBMIT]   response headers: ${JSON.stringify(resp.headers)}`);
+        console.log(`[SUBMIT]   response body: ${JSON.stringify(resp.data)}`);
+        lastErr = null;
+        break; // got a response — stop retrying
+      } catch (err) {
+        lastErr = err;
+        console.error(`[SUBMIT] Attempt ${attempt} failed: ${err.message} code=${err.code || 'N/A'}`);
+        if (attempt < MAX_ATTEMPTS) {
+          const delay = attempt * 3000;
+          console.log(`[SUBMIT] Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+
+    if (lastErr) throw lastErr;
 
     const respData = resp.data || {};
     const nitbId   = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
-    console.log(`[SUBMIT]   extracted nitbId=${nitbId}`);
+    console.log(`[SUBMIT] extracted nitbId=${nitbId}`);
 
     const complaintCode = generateComplaintCode();
     saveComplaint(session, complaintCode);
 
     if (resp.status >= 200 && resp.status < 300) {
-      console.log(`[SUBMIT] Success — sending NITB_SUCCESS_MSG with id=${nitbId || complaintCode}`);
+      console.log(`[SUBMIT] Success — id=${nitbId || complaintCode}`);
       await sendTextMessage(phone, S(session, 'NITB_SUCCESS_MSG', nitbId || complaintCode));
     } else {
-      console.warn(`[SUBMIT] Non-2xx from NITB (${resp.status}) — sending NITB_FAIL_MSG`);
+      console.warn(`[SUBMIT] Non-2xx from NITB (${resp.status})`);
       await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
     }
 
@@ -460,8 +493,7 @@ async function doSubmit(phone, session) {
     return;
 
   } catch (apiErr) {
-    console.error(`[SUBMIT] NITB API error: ${apiErr.message}`);
-    if (apiErr.code) console.error(`[SUBMIT]   error code: ${apiErr.code}`);
+    console.error(`[SUBMIT] All attempts failed: ${apiErr.message} code=${apiErr.code || 'N/A'}`);
     if (apiErr.response) {
       console.error(`[SUBMIT]   response status: ${apiErr.response.status}`);
       console.error(`[SUBMIT]   response body: ${JSON.stringify(apiErr.response.data)}`);
