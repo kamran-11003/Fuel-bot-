@@ -375,6 +375,7 @@ async function doSubmit(phone, session) {
   console.log('\n╔══════════════════════════════════════╗');
   console.log('║        COMPLAINT SUBMITTED           ║');
   console.log('╚══════════════════════════════════════╝');
+  console.log(`[SUBMIT] session.phone=${session.phone} webhook phone arg=${phone}`);
 
   // --- Secure image download + upload ---
   let tempFilePath = null;
@@ -434,7 +435,7 @@ async function doSubmit(phone, session) {
       '--location',
       '--silent',
       '--show-error',
-      '--max-time', '60',
+      '--max-time', '15',
       '--write-out', '\n__HTTP_STATUS__%{http_code}',
       '-X', 'POST',
       apiUrl,
@@ -443,16 +444,16 @@ async function doSubmit(phone, session) {
       '--header', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       '--header', 'Origin: https://icta.nitb.gov.pk',
       '--header', 'Referer: https://icta.nitb.gov.pk/',
-      '--form', `user[phoneNumber]=${usr.phoneNumber}`,
-      '--form', `user[cnic]=${usr.cnic}`,
-      '--form', `location[lat]=${loc.lat}`,
-      '--form', `location[lng]=${loc.lng}`,
-      '--form', `location[city]=${loc.city || ''}`,
-      '--form', `location[province]=${loc.province || ''}`,
-      '--form', `location[nearestLandmark]=${loc.nearestLandmark || ''}`,
-      '--form', `complaint[type]=${cmp.type}`,
-      '--form', `complaint[pumpBrand]=${cmp.pumpBrand}`,
-      '--form', `complaint[description]=${cmp.description}`,
+      '--form', `user[phoneNumber]= ${usr.phoneNumber}`,
+      '--form', `user[cnic]= ${usr.cnic}`,
+      '--form', `location[lat]= ${loc.lat}`,
+      '--form', `location[lng]= ${loc.lng}`,
+      '--form', `location[city]= ${loc.city || ''}`,
+      '--form', `location[province]= ${loc.province || ''}`,
+      '--form', `location[nearestLandmark]= ${loc.nearestLandmark || ''}`,
+      '--form', `complaint[type]= ${cmp.type}`,
+      '--form', `complaint[pumpBrand]= ${cmp.pumpBrand}`,
+      '--form', `complaint[description]= ${cmp.description}`,
       '--form', `complaint[images][]\t=@${tempFilePath};type=${mime}`
     ];
 
