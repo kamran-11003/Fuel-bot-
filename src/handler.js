@@ -414,7 +414,7 @@ async function doSubmit(phone, session) {
     // Tell user we're submitting so they don't think it's stuck
     await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
 
-    const MAX_ATTEMPTS = 3;
+    const MAX_ATTEMPTS = 2;
     let lastErr = null;
     let resp    = null;
 
@@ -437,21 +437,21 @@ async function doSubmit(phone, session) {
       console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
       console.log(`[SUBMIT]   description=${payload.complaint.description}`);
       console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
-      console.log(`[SUBMIT]   content-type: ${formHeaders['content-type']}`);
-      console.log(`[SUBMIT]   content-length: ${contentLength}`);
+      const outgoingHeaders = {
+        'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
+        ...NITB_HEADERS,
+        ...formHeaders,
+        'Content-Length': contentLength
+      };
+      console.log(`[SUBMIT]   outgoing headers: ${JSON.stringify(outgoingHeaders)}`);
 
       try {
         const t0 = Date.now();
         resp = await axios.post(apiUrl, form, {
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
-          timeout: 120000,
-          headers: {
-            'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
-            ...NITB_HEADERS,
-            ...formHeaders,
-            'Content-Length': contentLength
-          },
+          timeout: 30000,
+          headers: outgoingHeaders,
           validateStatus: () => true
         });
         const elapsed = Date.now() - t0;
@@ -462,11 +462,15 @@ async function doSubmit(phone, session) {
         break; // got a response — stop retrying
       } catch (err) {
         lastErr = err;
-        console.error(`[SUBMIT] Attempt ${attempt} failed: ${err.message} code=${err.code || 'N/A'}`);
+        if (err.code === 'ECONNABORTED') {
+          console.error(`[SUBMIT] Attempt ${attempt} timed out (ECONNABORTED). NITB server accepted the TCP connection but sent no response.`);
+          console.error(`[SUBMIT] *** LIKELY CAUSE: Render.com outbound IPs are blocked by NITB\'s WAF. Ask NITB to whitelist Render\'s IPs. ***`);
+        } else {
+          console.error(`[SUBMIT] Attempt ${attempt} failed: ${err.message} code=${err.code || 'N/A'}`);
+        }
         if (attempt < MAX_ATTEMPTS) {
-          const delay = attempt * 3000;
-          console.log(`[SUBMIT] Retrying in ${delay}ms...`);
-          await new Promise(r => setTimeout(r, delay));
+          console.log(`[SUBMIT] Retrying in 3000ms...`);
+          await new Promise(r => setTimeout(r, 3000));
         }
       }
     }
