@@ -13,7 +13,8 @@
  *     STATUS_PHONE_INPUT → STATUS_CNIC_INPUT → (result) → MAIN_MENU
  */
 
-const axios = require('axios');
+const axios    = require('axios');
+const { execFile } = require('child_process');
 
 const {
   STATES, PUMPS, isValidCnic, cleanCnic, isValidDetails,
@@ -407,88 +408,87 @@ async function doSubmit(phone, session) {
     return;
   }
 
-  // ── Step 5: Submit to NITB API ────────────────────────────────────────────
+  // ── Step 5: Submit to NITB API via curl (mirrors working Postman request) ─
   try {
     const apiUrl = process.env.COMPLAINT_API_URL;
 
     // Tell user we're submitting so they don't think it's stuck
     await sendTextMessage(phone, S(session, 'CONFIRM_MSG'));
 
-    const MAX_ATTEMPTS = 2;
-    let lastErr = null;
-    let resp    = null;
+    console.log(`[SUBMIT] Step 5: curl POST ${apiUrl}`);
+    console.log(`[SUBMIT]   phone=${payload.user.phoneNumber} cnic=${payload.user.cnic}`);
+    console.log(`[SUBMIT]   lat=${payload.location.lat} lng=${payload.location.lng}`);
+    console.log(`[SUBMIT]   city=${payload.location.city} province=${payload.location.province}`);
+    console.log(`[SUBMIT]   landmark=${payload.location.nearestLandmark}`);
+    console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
+    console.log(`[SUBMIT]   description=${payload.complaint.description}`);
+    console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      // Rebuild form each attempt — streams cannot be reused after first read
-      const form        = buildFormData(tempFilePath, mime, payload);
-      const formHeaders = form.getHeaders();
+    const loc = payload.location;
+    const usr = payload.user;
+    const cmp = payload.complaint;
 
-      // Compute Content-Length explicitly. Without it axios falls back to
-      // chunked transfer encoding which causes NITB's server to hang.
-      const contentLength = await new Promise((resolve, reject) => {
-        form.getLength((err, len) => (err ? reject(err) : resolve(len)));
+    // Build curl args exactly matching the working Postman curl command.
+    // execFile is used (not exec) so no shell injection is possible.
+    const curlArgs = [
+      '--location',
+      '--silent',
+      '--show-error',
+      '--max-time', '60',
+      '--write-out', '\n__HTTP_STATUS__%{http_code}',
+      '-X', 'POST',
+      apiUrl,
+      '--header', `X-WhatsApp-Secret: ${process.env.NITB_WHATSAPP_SECRET}`,
+      '--header', 'Accept: application/json',
+      '--header', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      '--header', 'Origin: https://icta.nitb.gov.pk',
+      '--header', 'Referer: https://icta.nitb.gov.pk/',
+      '--form', `user[phoneNumber]=${usr.phoneNumber}`,
+      '--form', `user[cnic]=${usr.cnic}`,
+      '--form', `location[lat]=${loc.lat}`,
+      '--form', `location[lng]=${loc.lng}`,
+      '--form', `location[city]=${loc.city || ''}`,
+      '--form', `location[province]=${loc.province || ''}`,
+      '--form', `location[nearestLandmark]=${loc.nearestLandmark || ''}`,
+      '--form', `complaint[type]=${cmp.type}`,
+      '--form', `complaint[pumpBrand]=${cmp.pumpBrand}`,
+      '--form', `complaint[description]=${cmp.description}`,
+      '--form', `complaint[images][]\t=@${tempFilePath};type=${mime}`
+    ];
+
+    const t0 = Date.now();
+    const { stdout, stderr } = await new Promise((resolve, reject) => {
+      execFile('curl', curlArgs, { maxBuffer: 2 * 1024 * 1024 }, (err, stdout, stderr) => {
+        if (err) reject(Object.assign(err, { stdout, stderr }));
+        else     resolve({ stdout, stderr });
       });
+    });
+    const elapsed = Date.now() - t0;
 
-      console.log(`[SUBMIT] Step 5 attempt ${attempt}/${MAX_ATTEMPTS}: POST ${apiUrl}`);
-      console.log(`[SUBMIT]   phone=${payload.user.phoneNumber} cnic=${payload.user.cnic}`);
-      console.log(`[SUBMIT]   lat=${payload.location.lat} lng=${payload.location.lng}`);
-      console.log(`[SUBMIT]   city=${payload.location.city} province=${payload.location.province}`);
-      console.log(`[SUBMIT]   landmark=${payload.location.nearestLandmark}`);
-      console.log(`[SUBMIT]   type=${payload.complaint.type} pump=${payload.complaint.pumpBrand}`);
-      console.log(`[SUBMIT]   description=${payload.complaint.description}`);
-      console.log(`[SUBMIT]   imageFile=${tempFilePath} mime=${mime}`);
-      const outgoingHeaders = {
-        'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
-        ...NITB_HEADERS,
-        ...formHeaders,
-        'Content-Length': contentLength
-      };
-      console.log(`[SUBMIT]   outgoing headers: ${JSON.stringify(outgoingHeaders)}`);
+    if (stderr) console.log(`[SUBMIT] curl stderr: ${stderr.trim()}`);
+    console.log(`[SUBMIT] curl stdout (${elapsed}ms): ${stdout.trim()}`);
 
-      try {
-        const t0 = Date.now();
-        resp = await axios.post(apiUrl, form, {
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
-          timeout: 30000,
-          headers: outgoingHeaders,
-          validateStatus: () => true
-        });
-        const elapsed = Date.now() - t0;
-        console.log(`[SUBMIT] Attempt ${attempt} response: status=${resp.status} elapsed=${elapsed}ms`);
-        console.log(`[SUBMIT]   response headers: ${JSON.stringify(resp.headers)}`);
-        console.log(`[SUBMIT]   response body: ${JSON.stringify(resp.data)}`);
-        lastErr = null;
-        break; // got a response — stop retrying
-      } catch (err) {
-        lastErr = err;
-        if (err.code === 'ECONNABORTED') {
-          console.error(`[SUBMIT] Attempt ${attempt} timed out (ECONNABORTED). NITB server accepted the TCP connection but sent no response.`);
-          console.error(`[SUBMIT] *** LIKELY CAUSE: Render.com outbound IPs are blocked by NITB\'s WAF. Ask NITB to whitelist Render\'s IPs. ***`);
-        } else {
-          console.error(`[SUBMIT] Attempt ${attempt} failed: ${err.message} code=${err.code || 'N/A'}`);
-        }
-        if (attempt < MAX_ATTEMPTS) {
-          console.log(`[SUBMIT] Retrying in 3000ms...`);
-          await new Promise(r => setTimeout(r, 3000));
-        }
-      }
-    }
+    // curl --write-out appends \n__HTTP_STATUS__<code> at the end
+    const statusMatch = stdout.match(/__HTTP_STATUS__(\d+)/);
+    const httpStatus  = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+    const body        = stdout.replace(/\n__HTTP_STATUS__\d+$/, '').trim();
 
-    if (lastErr) throw lastErr;
+    console.log(`[SUBMIT] http status=${httpStatus} body=${body}`);
 
-    const respData = resp.data || {};
-    const nitbId   = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
+    let respData = {};
+    try { respData = JSON.parse(body); } catch (_) { /* non-JSON body */ }
+
+    const nitbId = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
     console.log(`[SUBMIT] extracted nitbId=${nitbId}`);
 
     const complaintCode = generateComplaintCode();
     saveComplaint(session, complaintCode);
 
-    if (resp.status >= 200 && resp.status < 300) {
+    if (httpStatus >= 200 && httpStatus < 300) {
       console.log(`[SUBMIT] Success — id=${nitbId || complaintCode}`);
       await sendTextMessage(phone, S(session, 'NITB_SUCCESS_MSG', nitbId || complaintCode));
     } else {
-      console.warn(`[SUBMIT] Non-2xx from NITB (${resp.status})`);
+      console.warn(`[SUBMIT] Non-2xx from NITB (${httpStatus})`);
       await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
     }
 
@@ -497,11 +497,9 @@ async function doSubmit(phone, session) {
     return;
 
   } catch (apiErr) {
-    console.error(`[SUBMIT] All attempts failed: ${apiErr.message} code=${apiErr.code || 'N/A'}`);
-    if (apiErr.response) {
-      console.error(`[SUBMIT]   response status: ${apiErr.response.status}`);
-      console.error(`[SUBMIT]   response body: ${JSON.stringify(apiErr.response.data)}`);
-    }
+    console.error(`[SUBMIT] curl failed: ${apiErr.message}`);
+    if (apiErr.stdout) console.error(`[SUBMIT]   stdout: ${apiErr.stdout.trim()}`);
+    if (apiErr.stderr) console.error(`[SUBMIT]   stderr: ${apiErr.stderr.trim()}`);
     const complaintCode = generateComplaintCode();
     saveComplaint(session, complaintCode);
     await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
