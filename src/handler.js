@@ -396,19 +396,38 @@ async function doSubmit(phone, session) {
       tempFilePath = saveTempFile(buffer, mime);
       console.log(`✅ Image saved to temp: ${tempFilePath}`);
 
-      // Step 5: Generate local code immediately, confirm user, then submit to NITB in background
+      // Step 5: Submit to NITB API as multipart/form-data
+      const form    = buildFormData(tempFilePath, mime, payload);
+      const apiUrl  = process.env.COMPLAINT_API_URL;
+
+      const resp = await axios.post(apiUrl, form, {
+        maxBodyLength: Infinity,
+        timeout: 30000,
+        headers: {
+          'X-WhatsApp-Secret': process.env.NITB_WHATSAPP_SECRET,
+          ...NITB_HEADERS,
+          ...form.getHeaders()
+        },
+        validateStatus: () => true
+      });
+
+      console.log(`NITB API response (${resp.status}):`, JSON.stringify(resp.data));
+
+      const respData = resp.data || {};
+      const nitbId   = respData.complaintId || respData.complaint_code || respData.id || respData.code || null;
+
       const complaintCode = generateComplaintCode();
       saveComplaint(session, complaintCode);
-      updateSession(phone, { state: STATES.CONFIRMATION });
-      console.log(`ℹ️  Local complaint code assigned: ${complaintCode}`);
 
-      // API submission disabled — send dummy success after a short delay
-      const sessionLang = session.lang;
-      const dummyId = `NITB-${Date.now().toString().slice(-6)}`;
-      setTimeout(async () => {
-        await sendTextMessage(phone, S({ lang: sessionLang }, 'NITB_SUCCESS_MSG', dummyId));
-      }, 2000);
+      if (resp.status >= 200 && resp.status < 300) {
+        await sendTextMessage(phone, S(session, 'NITB_SUCCESS_MSG', nitbId || complaintCode));
+      } else {
+        console.warn(`NITB API error ${resp.status}:`, JSON.stringify(respData));
+        await sendTextMessage(phone, S(session, 'NITB_FAIL_MSG'));
+      }
 
+      updateSession(phone, { state: STATES.MAIN_MENU });
+      await sendMainMenu(phone, session);
       return;
 
     }
