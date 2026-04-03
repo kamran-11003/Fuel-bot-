@@ -169,9 +169,8 @@ function buildFormData(filePath, mimeType, payload) {
   // Attach the image file as a Buffer (avoids DelayedStream issues with axios)
   const filename = path.basename(filePath);
   const fileBuffer = fs.readFileSync(filePath);
-  // The NITB API expects the image field name with a trailing tab character.
-  // This matches the working Postman/curl request exactly.
-  form.append('complaint[images][]\t', fileBuffer, {
+  // Standard field name for image upload
+  form.append('complaint[images][]', fileBuffer, {
     filename,
     contentType: mimeType
   });
